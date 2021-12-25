@@ -6,7 +6,6 @@ type WishlistResponse = { data: Record<string, { name: string }> };
 type GamesResponse = { data: { response: { games: { name: string }[] } } };
 
 const app = express();
-const port = 8080; // default port to listen
 
 app.get('/:steamId', (req, res) => {
   Promise.all([
@@ -40,6 +39,6 @@ app.get('/:steamId', (req, res) => {
 });
 
 // start the Express server
-app.listen(port, () => {
-  console.log(`server started at http://localhost:${port}`);
+app.listen(process.env.PORT, () => {
+  console.log(`server started at http://localhost:${process.env.PORT}`);
 });
