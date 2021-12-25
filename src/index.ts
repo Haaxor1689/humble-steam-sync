@@ -2,39 +2,50 @@ import express from 'express';
 import axios from 'axios';
 require('dotenv').config();
 
-type WishlistResponse = { data: Record<string, { name: string }> };
+type Item = { name: string };
 type GamesResponse = { data: { response: { games: { name: string }[] } } };
 
 const app = express();
+
+const getWishlistPages = async (
+  steamId: string,
+  p: number = 0
+): Promise<Item[]> => {
+  const r = await axios.get(
+    `https://store.steampowered.com/wishlist/profiles/${steamId}/wishlistdata/?p=${p}`
+  );
+  if (r.data.length === 0 || r.data.success === 2) return [];
+
+  const next = await getWishlistPages(steamId, p + 1);
+  return [...(Object.values(r.data) as Item[]), ...next];
+};
+
+const getOwnedGames = (steamId: string): Promise<Item[]> =>
+  axios
+    .get(
+      `https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=${process.env.STEAM_API_KEY}&format=json&steamid=${steamId}&include_appinfo=true`
+    )
+    .then(r => r.data.response?.games ?? []);
 
 app.get('/:steamId', (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', 'https://www.humblebundle.com');
 
   Promise.all([
-    axios.get(
-      `https://store.steampowered.com/wishlist/profiles/${req.params.steamId}/wishlistdata/`
-    ),
-    axios.get(
-      `https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=${process.env.STEAM_API_KEY}&format=json&steamid=${req.params.steamId}&include_appinfo=true`
-    )
+    getWishlistPages(req.params.steamId),
+    getOwnedGames(req.params.steamId)
   ])
-    .then(
-      ([{ data: wishlist }, { data: games }]: [
-        WishlistResponse,
-        GamesResponse
-      ]) => {
-        res.send([
-          ...Object.values(wishlist).map(({ name }) => ({
-            name,
-            source: 'on wishlist'
-          })),
-          ...games.response.games.map(({ name }) => ({
-            name,
-            source: 'in library'
-          }))
-        ]);
-      }
-    )
+    .then(([wishlist, games]) => {
+      res.send([
+        ...wishlist.map(({ name }) => ({
+          name,
+          source: 'on wishlist'
+        })),
+        ...games.map(({ name }) => ({
+          name,
+          source: 'in library'
+        }))
+      ]);
+    })
     .catch(e => {
       res.send(e);
     });
