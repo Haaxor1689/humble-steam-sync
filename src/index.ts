@@ -8,6 +8,8 @@ type GamesResponse = { data: { response: { games: { name: string }[] } } };
 const app = express();
 
 app.get('/:steamId', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', 'https://www.humblebundle.com/');
+
   Promise.all([
     axios.get(
       `https://store.steampowered.com/wishlist/profiles/${req.params.steamId}/wishlistdata/`
