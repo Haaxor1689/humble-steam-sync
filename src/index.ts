@@ -26,11 +26,11 @@ app.get('/:steamId', (req, res) => {
         res.send([
           ...Object.values(wishlist).map(({ name }) => ({
             name,
-            source: 'wishlist'
+            source: 'on wishlist'
           })),
           ...games.response.games.map(({ name }) => ({
             name,
-            source: 'owned'
+            source: 'in library'
           }))
         ]);
       }
