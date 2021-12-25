@@ -8,7 +8,7 @@ type GamesResponse = { data: { response: { games: { name: string }[] } } };
 const app = express();
 
 app.get('/:steamId', (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', 'https://www.humblebundle.com/');
+  res.setHeader('Access-Control-Allow-Origin', 'https://www.humblebundle.com');
 
   Promise.all([
     axios.get(
