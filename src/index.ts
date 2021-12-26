@@ -27,12 +27,12 @@ const getOwnedGames = (steamId: string): Promise<Item[]> =>
     )
     .then(r => r.data.response?.games ?? []);
 
-const resolveVanityUrl = (name: string) =>
+const getSteamId = (steamId: string) =>
   axios
     .get(
       `https://api.steampowered.com/ISteamUser/ResolveVanityURL/v1/?key=${process.env.STEAM_API_KEY}&vanityurl=${name}`
     )
-    .then(r => r.data.response?.steamid ?? '');
+    .then(r => r.data.response?.steamid ?? steamId);
 
 const getUserProfile = (steamId: string) =>
   axios
@@ -44,14 +44,11 @@ const getUserProfile = (steamId: string) =>
 app.get('/:steamId/games', async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', 'https://www.humblebundle.com');
   try {
-    let steamId = req.params.steamId;
-    if (!steamId.match(/$\d+^/)) {
-      steamId = await resolveVanityUrl(steamId);
-    }
+    const steamId = await getSteamId(req.params.steamId);
 
     const [wishlist, games] = await Promise.all([
-      getWishlistPages(req.params.steamId),
-      getOwnedGames(req.params.steamId)
+      getWishlistPages(steamId),
+      getOwnedGames(steamId)
     ]);
     res.send([
       ...wishlist.map(({ name }) => ({
@@ -68,15 +65,11 @@ app.get('/:steamId/games', async (req, res) => {
   }
 });
 
-app.get('/:name/profile', async (req, res) => {
+app.get('/:steamId/profile', async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   try {
-    let name = req.params.name;
-    if (!name.match(/$\d+^/)) {
-      name = await resolveVanityUrl(name);
-    }
-
-    res.send(await getUserProfile(name));
+    const steamId = await getSteamId(req.params.steamId);
+    res.send(await getUserProfile(steamId));
   } catch (e) {
     res.status(500).send(e);
   }
