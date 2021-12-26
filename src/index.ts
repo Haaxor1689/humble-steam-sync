@@ -30,7 +30,7 @@ const getOwnedGames = (steamId: string): Promise<Item[]> =>
 const getSteamId = (steamId: string) =>
   axios
     .get(
-      `https://api.steampowered.com/ISteamUser/ResolveVanityURL/v1/?key=${process.env.STEAM_API_KEY}&vanityurl=${name}`
+      `https://api.steampowered.com/ISteamUser/ResolveVanityURL/v1/?key=${process.env.STEAM_API_KEY}&vanityurl=${steamId}`
     )
     .then(r => r.data.response?.steamid ?? steamId);
 
