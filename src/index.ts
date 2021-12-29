@@ -46,20 +46,14 @@ app.get('/:steamId/games', async (req, res) => {
   try {
     const steamId = await getSteamId(req.params.steamId);
 
-    const [wishlist, games] = await Promise.all([
+    const [wishlist, library] = await Promise.all([
       getWishlistPages(steamId),
       getOwnedGames(steamId)
     ]);
-    res.send([
-      ...wishlist.map(({ name }) => ({
-        name,
-        source: 'on wishlist'
-      })),
-      ...games.map(({ name }) => ({
-        name,
-        source: 'in library'
-      }))
-    ]);
+    res.send({
+      wishlist: wishlist.map(w => w.name),
+      library: library.map(g => g.name)
+    });
   } catch (e) {
     res.status(500).send(e);
   }
