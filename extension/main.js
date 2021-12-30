@@ -9,7 +9,7 @@ const toastElem = document.createElement('div');
 toastElem.className = 'hss-toast';
 
 const titleElem = document.createElement('h3');
-titleElem.innerText = 'Humble Steam Sync extension';
+titleElem.innerText = 'Steam tags extension';
 titleElem.className = 'hss-title';
 toastElem.appendChild(titleElem);
 
