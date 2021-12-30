@@ -150,6 +150,6 @@ h2 {
 #reset-button {
   grid-column-start: 3;
   grid-row-start: 2;
-  grid-row-end: 4;
+  grid-row-end: 5;
   align-self: flex-end;
 }
