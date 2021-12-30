@@ -60,7 +60,7 @@ app.get('/:steamId/games', async (req, res) => {
 });
 
 app.get('/:steamId/profile', async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', 'chrome-extension://*');
+  res.setHeader('Access-Control-Allow-Origin', '*');
   try {
     const steamId = await getSteamId(req.params.steamId);
     res.send(await getUserProfile(steamId));
