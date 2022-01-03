@@ -15,7 +15,7 @@ let loading = false;
 
 const updateValues = (storage, error, steamId, avatar) => {
   storage &&
-    chrome.storage.sync.set({
+    browser.storage.local.set({
       steamId: steamId ?? '',
       avatar: avatar ?? ''
     });
@@ -27,7 +27,7 @@ const updateValues = (storage, error, steamId, avatar) => {
   avatarElem.style = avatar ? `background-image: url(${avatar})` : undefined;
 };
 
-chrome.storage.sync
+browser.storage.local
   .get(['steamId', 'avatar'])
   .then(({ steamId, avatar }) => updateValues(false, '', steamId, avatar));
 
@@ -51,7 +51,7 @@ form.addEventListener('submit', e => {
         return;
       }
       updateValues(true, '', steamId, profile.avatarmedium);
-      chrome.runtime.sendMessage({ action: 'getOwnedGames', steamId });
+      browser.runtime.sendMessage({ action: 'getOwnedGames', steamId });
     })
     .catch(() => updateValues(true, 'An error occurred'))
     .finally(() => {
@@ -71,10 +71,10 @@ const updateSavedData = ({ cacheTime, wishlist, library, ignored }) => {
   savedIgnoredElem.innerText = ignored?.length ?? '-';
 };
 
-chrome.storage.local.get(null).then(updateSavedData);
+browser.storage.local.get(null).then(updateSavedData);
 
 resetButtonElem.addEventListener('click', e => {
   e.preventDefault();
-  chrome.storage.local.clear();
+  browser.storage.local.clear();
   updateSavedData({});
 });

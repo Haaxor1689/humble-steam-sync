@@ -16,7 +16,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 4px 8px;
+  padding: 8px 12px;
+  margin: 0;
   color: var(--main-text-color);
   background: radial-gradient(
       farthest-side at top right,
@@ -40,6 +41,7 @@ body {
     );
   background-color: var(--gradient-background);
   font-size: 0.7rem;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   line-height: 1.4;
 }
 
@@ -57,6 +59,11 @@ form {
   background-position: center;
   background-size: cover;
   flex-shrink: 0;
+}
+
+#field {
+  display: flex;
+  flex-direction: column;
 }
 
 input {

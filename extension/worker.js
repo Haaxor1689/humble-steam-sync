@@ -1,8 +1,8 @@
 /** @param {string} steamId */
 const getOwnedGames = steamId =>
-  fetch(`https://humble-steam-sync.herokuapp.com/${steamId}/games`).then(r =>
-    r.json()
-  );
+  fetch(`https://humble-steam-sync.herokuapp.com/${steamId}/games`)
+    .then(r => r.json())
+    .then(r => ({ ...r, ignored: [] }));
 
 const mapAppIdToName = apps => g =>
   apps.applist.apps.find(a => a.appid == g)?.name;
@@ -23,8 +23,8 @@ const getUserData = () =>
         }));
     });
 
-chrome.runtime.onMessage.addListener((message, _, resolve) => {
-  chrome.storage.local
+browser.runtime.onMessage.addListener(message =>
+  browser.storage.local
     .get(['cacheTime', 'wishlist', 'library'])
     .then(({ cacheTime, wishlist, library }) => {
       // Check 1 hour cache time
@@ -42,18 +42,17 @@ chrome.runtime.onMessage.addListener((message, _, resolve) => {
     .then(r => {
       if (!r.noUserData) {
         console.log(r);
-        chrome.storage.local.set({
+        browser.storage.local.set({
           cacheTime: new Date().toLocaleString(),
           wishlist: r.wishlist,
           library: r.library,
-          ignored: r.ignored ?? []
+          ignored: r.ignored
         });
       }
-      resolve(r);
+      return r;
     })
     .catch(error => {
       console.error(error);
-      resolve({ error: error.message });
-    });
-  return true;
-});
+      return { error: error.message };
+    })
+);

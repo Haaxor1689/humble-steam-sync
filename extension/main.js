@@ -123,10 +123,10 @@ const processResponse = r => {
   contentElem.innerText = 'Wishlist and library info added';
 };
 
-chrome.storage.sync.get('steamId').then(({ steamId }) => {
+browser.storage.local.get('steamId').then(({ steamId }) => {
   toastElem.classList.add('hss-highlight');
   contentElem.innerText = 'Loading...';
-  chrome.runtime.sendMessage({ action: 'getUserData' }, r => {
+  browser.runtime.sendMessage({ action: 'getUserData' }).then(r => {
     if (!r.noUserData) {
       processResponse(r);
       return;
@@ -140,7 +140,7 @@ chrome.storage.sync.get('steamId').then(({ steamId }) => {
       return;
     }
 
-    chrome.runtime.sendMessage(
+    browser.runtime.sendMessage(
       { action: 'getOwnedGames', steamId },
       processResponse
     );
@@ -148,7 +148,7 @@ chrome.storage.sync.get('steamId').then(({ steamId }) => {
 });
 
 new MutationObserver(mutations => {
-  chrome.storage.local.get(null).then(data =>
+  browser.storage.local.get(null).then(data =>
     mutations
       .filter(m => m.type === 'childList')
       .flatMap(m => [...m.addedNodes].flatMap(getItemElements))
