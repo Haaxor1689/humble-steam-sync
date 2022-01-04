@@ -20,7 +20,6 @@
     }
   ],
   "permissions": [
-    "activeTab",
     "storage",
     "https://store.steampowered.com/dynamicstore/userdata/",
     "https://humble-steam-sync.herokuapp.com/*/games",
