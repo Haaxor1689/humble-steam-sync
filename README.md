@@ -29,6 +29,7 @@ ExpressJS server providing simple Rest API to fetch public steam user info and l
 - **v1.3:**
   - Fixed a bug where cached ignored games would get reset
   - Created a Firefox version of this extension
+  - Removed unnecessary `activeTab` permission
 - **v1.2:**
   - DLCs will show up correctly (only if logged in on Steam website)
   - Added `Ignored` tag that also lowers opacity of given item just like on Steam (only if logged in on Steam website)
