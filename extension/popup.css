@@ -109,6 +109,27 @@ button.loading span {
   opacity: 0.25;
 }
 
+.logged-in:before {
+  content: ' ';
+  display: inline-block;
+  vertical-align: top;
+  width: 16px;
+  height: 16px;
+  background-image: url(https://store.akamai.steamstatic.com/public/images/v6/app/game_reasons_for.png);
+}
+
+.logged-in a {
+  color: var(--main-text-color);
+}
+
+.store form {
+  display: none;
+}
+
+body:not(.store) .logged-in {
+  display: none;
+}
+
 #error {
   color: #ff4646;
 }

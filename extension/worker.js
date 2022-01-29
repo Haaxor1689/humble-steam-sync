@@ -27,6 +27,7 @@ browser.runtime.onMessage.addListener(message =>
   browser.storage.local
     .get(['cacheTime', 'wishlist', 'library'])
     .then(({ cacheTime, wishlist, library }) => {
+      console.log('Received message:', message);
       // Check 1 hour cache time
       if (new Date() - new Date(cacheTime) < 1000 * 60 * 60) {
         return { wishlist, library };
@@ -40,19 +41,19 @@ browser.runtime.onMessage.addListener(message =>
       throw `Unknown action "${message.action}"`;
     })
     .then(r => {
-      if (!r.noUserData) {
-        console.log(r);
-        browser.storage.local.set({
-          cacheTime: new Date().toLocaleString(),
-          wishlist: r.wishlist,
-          library: r.library,
-          ignored: r.ignored
-        });
-      }
-      return r;
+      if (r.noUserData) return r;
+      const data = {
+        cacheTime: new Date().toLocaleString(),
+        wishlist: r.wishlist,
+        library: r.library,
+        ignored: r.ignored
+      };
+      console.log('Returned data: ', data);
+      browser.storage.local.set(data);
+      return data;
     })
     .catch(error => {
-      console.error(error);
+      console.error('Returned data: ', error);
       return { error: error.message };
     })
 );

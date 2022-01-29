@@ -140,10 +140,9 @@ browser.storage.local.get('steamId').then(({ steamId }) => {
       return;
     }
 
-    browser.runtime.sendMessage(
-      { action: 'getOwnedGames', steamId },
-      processResponse
-    );
+    return browser.runtime
+      .sendMessage({ action: 'getOwnedGames', steamId })
+      .then(processResponse);
   });
 });
 

@@ -26,6 +26,10 @@ ExpressJS server providing simple Rest API to fetch public steam user info and l
 
 ## Changelog
 
+- **v1.4**
+  - Added indicator that user is logged in through store.steampowered.com
+  - Fixed error with loading library info by user steam id/url
+  - Fixed saved data info not updating in extension settings immediately after refresh
 - **v1.3:**
   - Fixed a bug where cached ignored games would get reset
   - Created a Firefox version of this extension

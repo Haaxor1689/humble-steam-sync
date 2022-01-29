@@ -1,6 +1,6 @@
 {
   "manifest_version": 2,
-  "version": "1.3",
+  "version": "1.4",
   "name": "Steam tags for Humble Bundle",
   "description": "Show your library and wishlist games from Steam on Humble Bundle pages.",
   "icons": { "128": "icon.png" },

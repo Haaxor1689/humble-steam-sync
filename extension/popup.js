@@ -1,3 +1,4 @@
+const body = document.querySelector('body');
 const form = document.querySelector('form');
 const avatarElem = document.getElementById('avatar');
 const input = document.getElementById('input');
@@ -11,7 +12,17 @@ const savedIgnoredElem = document.getElementById('saved-ignored');
 const savedTimeElem = document.getElementById('saved-time');
 const resetButtonElem = document.getElementById('reset-button');
 
-let loading = false;
+let loading = true;
+
+browser.runtime
+  .sendMessage({ action: 'getUserData' })
+  .then(r => {
+    console.log(r);
+    if (r.noUserData) return;
+    body.classList.add('store');
+    updateSavedData(r);
+  })
+  .finally(() => (loading = false));
 
 const updateValues = (storage, error, steamId, avatar) => {
   storage &&
@@ -51,7 +62,9 @@ form.addEventListener('submit', e => {
         return;
       }
       updateValues(true, '', steamId, profile.avatarmedium);
-      browser.runtime.sendMessage({ action: 'getOwnedGames', steamId });
+      return browser.runtime
+        .sendMessage({ action: 'getOwnedGames', steamId })
+        .then(updateSavedData);
     })
     .catch(() => updateValues(true, 'An error occurred'))
     .finally(() => {
@@ -61,10 +74,10 @@ form.addEventListener('submit', e => {
 });
 
 const updateSavedData = ({ cacheTime, wishlist, library, ignored }) => {
-  if (!cacheTime) {
-    savedDataElem.classList.add('no-data');
-    return;
-  }
+  !cacheTime
+    ? savedDataElem.classList.add('no-data')
+    : savedDataElem.classList.remove('no-data');
+
   savedTimeElem.innerText = cacheTime;
   savedWishlistElem.innerText = wishlist?.length ?? '-';
   savedLibraryElem.innerText = library?.length ?? '-';
