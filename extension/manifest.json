@@ -1,6 +1,6 @@
 {
   "manifest_version": 2,
-  "version": "1.4",
+  "version": "1.5",
   "name": "Steam tags for Humble Bundle",
   "description": "Show your library and wishlist games from Steam on Humble Bundle pages.",
   "icons": { "128": "icon.png" },
@@ -8,7 +8,7 @@
   "content_scripts": [
     {
       "matches": [
-        "https://www.humblebundle.com/subscription/*",
+        "https://www.humblebundle.com/membership/*",
         "https://www.humblebundle.com/games/*",
         "https://www.humblebundle.com/software/*",
         "https://www.humblebundle.com/home/keys*",

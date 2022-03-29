@@ -1,5 +1,7 @@
 const body = document.querySelector('body');
 const form = document.querySelector('form');
+const loginElem = document.getElementById('store-login');
+const logoutElem = document.getElementById('logout');
 const avatarElem = document.getElementById('avatar');
 const input = document.getElementById('input');
 const buttonElem = document.getElementById('submit-button');
@@ -14,15 +16,17 @@ const resetButtonElem = document.getElementById('reset-button');
 
 let loading = true;
 
-browser.runtime
-  .sendMessage({ action: 'getUserData' })
-  .then(r => {
-    console.log(r);
-    if (r.noUserData) return;
-    body.classList.add('store');
-    updateSavedData(r);
-  })
-  .finally(() => (loading = false));
+const startLoading = () => {
+  buttonElem.className = 'loading';
+  loginElem.className = 'loading';
+  loading = true;
+};
+
+const stopLoading = () => {
+  buttonElem.className = undefined;
+  loginElem.className = undefined;
+  loading = false;
+};
 
 const updateValues = (storage, error, steamId, avatar) => {
   storage &&
@@ -32,27 +36,58 @@ const updateValues = (storage, error, steamId, avatar) => {
     });
   storage && updateSavedData({});
 
+  if (!steamId) {
+    body.classList.remove('steam-id');
+    input.disabled = false;
+  }
+
   errorElem.innerText = error;
   errorElem.style = !error ? 'display: none;' : undefined;
   input.value = steamId ?? '';
   avatarElem.style = avatar ? `background-image: url(${avatar})` : undefined;
 };
 
+const updateSavedData = ({ cacheTime, wishlist, library, ignored }) => {
+  !cacheTime
+    ? savedDataElem.classList.add('no-data')
+    : savedDataElem.classList.remove('no-data');
+
+  !cacheTime && body.classList.remove('store');
+
+  savedTimeElem.innerText = cacheTime;
+  savedWishlistElem.innerText = wishlist?.length ?? '-';
+  savedLibraryElem.innerText = library?.length ?? '-';
+  savedIgnoredElem.innerText = ignored?.length ?? '-';
+};
+
+// On load
 browser.storage.local
-  .get(['steamId', 'avatar'])
-  .then(({ steamId, avatar }) => updateValues(false, '', steamId, avatar));
+  .get(null)
+  .then(({ steamId, avatar, ...data }) => {
+    updateSavedData(data);
+    updateValues(false, '', steamId, avatar);
+    if (steamId) {
+      // If has steam id, return
+      body.classList.add('steam-id');
+      input.disabled = true;
+      return;
+    }
+    // If doesn't have steam id but have saved data, logged in through store
+    data.cacheTime && body.classList.add('store');
+  })
+  .finally(stopLoading);
 
 form.addEventListener('submit', e => {
   e.preventDefault();
   if (loading) return;
-
-  buttonElem.className = 'loading';
-  loading = true;
+  startLoading();
 
   const steamId =
     input.value.match(
       /^(?:https?:\/\/)?steamcommunity\.com\/(?:id|profiles)\/(\w+)\/?$/
     )?.[1] ?? input.value;
+
+  if (!steamId) return;
 
   fetch(`https://humble-steam-sync.herokuapp.com/${steamId}/profile`)
     .then(r => r.json())
@@ -62,32 +97,41 @@ form.addEventListener('submit', e => {
         return;
       }
       updateValues(true, '', steamId, profile.avatarmedium);
+      body.classList.add('steam-id');
+      input.disabled = true;
       return browser.runtime
         .sendMessage({ action: 'getOwnedGames', steamId })
         .then(updateSavedData);
     })
     .catch(() => updateValues(true, 'An error occurred'))
-    .finally(() => {
-      buttonElem.className = undefined;
-      loading = false;
-    });
+    .finally(stopLoading);
 });
-
-const updateSavedData = ({ cacheTime, wishlist, library, ignored }) => {
-  !cacheTime
-    ? savedDataElem.classList.add('no-data')
-    : savedDataElem.classList.remove('no-data');
-
-  savedTimeElem.innerText = cacheTime;
-  savedWishlistElem.innerText = wishlist?.length ?? '-';
-  savedLibraryElem.innerText = library?.length ?? '-';
-  savedIgnoredElem.innerText = ignored?.length ?? '-';
-};
-
-browser.storage.local.get(null).then(updateSavedData);
 
 resetButtonElem.addEventListener('click', e => {
   e.preventDefault();
   browser.storage.local.clear();
+  updateValues();
   updateSavedData({});
+});
+
+logoutElem.addEventListener('click', e => {
+  e.preventDefault();
+  browser.storage.local.clear();
+  updateValues();
+  updateSavedData({});
+});
+
+loginElem.addEventListener('click', e => {
+  e.preventDefault();
+  if (loading) return;
+  startLoading();
+
+  browser.runtime
+    .sendMessage({ action: 'getUserData' })
+    .then(r => {
+      if (r.noUserData) return;
+      body.classList.add('store');
+      updateSavedData(r);
+    })
+    .finally(stopLoading);
 });

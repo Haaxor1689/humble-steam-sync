@@ -26,6 +26,9 @@ ExpressJS server providing simple Rest API to fetch public steam user info and l
 
 ## Changelog
 
+- **v1.5**
+  - Updated to work on new `/membership` pages of humble choice
+  - Added option to log out and choose whether to log in with steam id or through store.steampowered.com
 - **v1.4**
   - Added indicator that user is logged in through store.steampowered.com
   - Fixed error with loading library info by user steam id/url

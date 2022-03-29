@@ -109,6 +109,18 @@ button.loading span {
   opacity: 0.25;
 }
 
+#logout {
+  display: none;
+  position: absolute;
+  top: 8px;
+  right: 12px;
+}
+
+.steam-id #logout,
+.store #logout {
+  display: block;
+}
+
 .logged-in:before {
   content: ' ';
   display: inline-block;
@@ -118,7 +130,7 @@ button.loading span {
   background-image: url(https://store.akamai.steamstatic.com/public/images/v6/app/game_reasons_for.png);
 }
 
-.logged-in a {
+a {
   color: var(--main-text-color);
 }
 
@@ -127,6 +139,27 @@ button.loading span {
 }
 
 body:not(.store) .logged-in {
+  display: none;
+}
+
+#store-login-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#store-login-info > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.store #store-login-info,
+.steam-id #store-login-info {
+  display: none;
+}
+
+.steam-id #submit-button {
   display: none;
 }
 
