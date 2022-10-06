@@ -8,12 +8,12 @@
   "content_scripts": [
     {
       "matches": [
-        "https://www.humblebundle.com/membership/*",
-        "https://www.humblebundle.com/games/*",
-        "https://www.humblebundle.com/software/*",
-        "https://www.humblebundle.com/home/keys*",
-        "https://www.humblebundle.com/home/library*",
-        "https://www.humblebundle.com/store*"
+        "https://*.humblebundle.com/membership/*",
+        "https://*.humblebundle.com/games/*",
+        "https://*.humblebundle.com/software/*",
+        "https://*.humblebundle.com/home/keys*",
+        "https://*.humblebundle.com/home/library*",
+        "https://*.humblebundle.com/store*"
       ],
       "css": ["main.css"],
       "js": ["browser-polyfill.min.js", "main.js"]
