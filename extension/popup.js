@@ -129,7 +129,13 @@ loginElem.addEventListener('click', e => {
   browser.runtime
     .sendMessage({ action: 'getUserData' })
     .then(r => {
-      if (r.noUserData) return;
+      if (r.noUserData) {
+        updateValues(
+          false,
+          'Looks like you are not logged in through store.steampowered.com'
+        );
+        return;
+      }
       body.classList.add('store');
       updateSavedData(r);
     })
