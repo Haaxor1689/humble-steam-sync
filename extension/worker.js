@@ -4,8 +4,7 @@ const getOwnedGames = steamId =>
     .then(r => r.json())
     .then(r => ({ library: r, wishlist: [], ignored: [] }));
 
-const mapAppIdToName = apps => g =>
-  [g, apps.applist.apps.find(a => a.appid == g)?.name];
+const idToName = apps => g => apps.applist.apps.find(a => a.appid == g)?.name;
 
 const getUserData = () =>
   fetch('https://store.steampowered.com/dynamicstore/userdata/')
@@ -15,11 +14,11 @@ const getUserData = () =>
       return fetch('https://api.steampowered.com/ISteamApps/GetAppList/v2/')
         .then(apps => apps.json())
         .then(apps => ({
-          wishlist: r.rgWishlist.map(mapAppIdToName(apps)).filter(v => v[1]),
-          library: r.rgOwnedApps.map(mapAppIdToName(apps)).filter(v => v[1]),
+          wishlist: r.rgWishlist.map(idToName(apps)).filter(v => v),
+          library: r.rgOwnedApps.map(idToName(apps)).filter(v => v),
           ignored: Object.keys(r.rgIgnoredApps)
-            .map(mapAppIdToName(apps))
-            .filter(v => v[1])
+            .map(idToName(apps))
+            .filter(v => v)
         }));
     });
 
