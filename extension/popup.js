@@ -89,7 +89,7 @@ form.addEventListener('submit', e => {
 
   if (!steamId) return;
 
-  fetch(`https://humble-steam-sync.herokuapp.com/${steamId}/profile`)
+  fetch(`https://humble-steam-sync.haaxor1689.dev/api/${steamId}/profile`)
     .then(r => r.json())
     .then(profile => {
       if (!profile) {

@@ -1,8 +1,8 @@
 /** @param {string} steamId */
 const getOwnedGames = steamId =>
-  fetch(`https://humble-steam-sync.herokuapp.com/${steamId}/games`)
+  fetch(`https://humble-steam-sync.haaxor1689.dev/api/${steamId}/games`)
     .then(r => r.json())
-    .then(r => ({ ...r, ignored: [] }));
+    .then(r => ({ library: r, wishlist: [], ignored: [] }));
 
 const mapAppIdToName = apps => g =>
   [g, apps.applist.apps.find(a => a.appid == g)?.name];
