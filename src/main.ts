@@ -1,3 +1,5 @@
+import browser from 'webextension-polyfill';
+
 const toastElem = document.createElement('div');
 toastElem.className = 'hss-toast';
 
@@ -16,8 +18,7 @@ document.body.appendChild(toastElem);
 const removeHighlight = () =>
   setTimeout(() => toastElem.classList.remove('hss-highlight'), 2000);
 
-/** @param {Element} item */
-const getItemName = item =>
+const getItemName = (item: Element) =>
   // Library
   (
     item.querySelector('.text-holder h2')?.innerText ??
@@ -37,8 +38,7 @@ const getItemName = item =>
     .replace(/_/g, '')
     .toLowerCase();
 
-/** @param {Element} node */
-const getItemElements = node =>
+const getItemElements = (node: Element) =>
   'querySelectorAll' in node
     ? [
         // Library
@@ -60,55 +60,49 @@ const getItemElements = node =>
       ].filter(n => !n.querySelector('.hss-tag'))
     : [];
 
-/**
- * @param {string} game
- * @returns {((item: string) => boolean)}
- */
-const matchesItem = game => item =>
+const matchesItem = (game: string) => (item: string) =>
   game === item.replace(/\W/g, '').toLowerCase();
 
 /**
  * @param {{ wishlist: string[]; library: string[]; ignored: string[] }} response
  * @returns {((item: Element) => void)}
  */
-const insertTag =
-  ({ wishlist, library, ignored }) =>
-  item => {
-    const game = getItemName(item);
+const insertTag = ({ wishlist, library, ignored }) => (item: Element) => {
+  const game = getItemName(item);
 
-    const wish = wishlist?.find(matchesItem(game));
-    const lib = library?.find(matchesItem(game));
-    const ign = ignored?.find(matchesItem(game));
+  const wish = wishlist?.find(matchesItem(game));
+  const lib = library?.find(matchesItem(game));
+  const ign = ignored?.find(matchesItem(game));
 
-    const source = wish
-      ? 'on wishlist'
-      : lib
-      ? 'in library'
-      : ign
-      ? 'ignored'
-      : undefined;
-    if (!source) return;
+  const source = wish
+    ? 'on wishlist'
+    : lib
+    ? 'in library'
+    : ign
+    ? 'ignored'
+    : undefined;
+  if (!source) return;
 
-    const tagElem = document.createElement('a');
-    tagElem.href = `https://store.steampowered.com/search/?term=${
-      wish ?? lib ?? ign
-    }`;
-    tagElem.target = `_blank`;
-    tagElem.innerText = source;
-    tagElem.className = 'hss-tag';
-    tagElem.dataset.source = source;
+  const tagElem = document.createElement('a');
+  tagElem.href = `https://store.steampowered.com/search/?term=${wish ??
+    lib ??
+    ign}`;
+  tagElem.target = `_blank`;
+  tagElem.innerText = source;
+  tagElem.className = 'hss-tag';
+  tagElem.dataset.source = source;
 
-    if (ign) item.classList.add('hss-ignored');
+  if (ign) item.classList.add('hss-ignored');
 
-    if (item.localName === 'tr') {
-      const td = item.querySelector('.platform');
-      td.style = 'position: relative';
-      td.appendChild(tagElem);
-      return;
-    }
+  if (item.localName === 'tr') {
+    const td = item.querySelector('.platform');
+    td.style = 'position: relative';
+    td.appendChild(tagElem);
+    return;
+  }
 
-    item.appendChild(tagElem);
-  };
+  item.appendChild(tagElem);
+};
 
 /** @param {{ wishlist: string[]; library: string[] }} response */
 const processResponse = r => {
@@ -153,7 +147,7 @@ new MutationObserver(mutations => {
       .flatMap(m => [...m.addedNodes].flatMap(getItemElements))
       .forEach(insertTag(data))
   );
-}).observe(document.querySelector('body'), {
+}).observe(document.querySelector('body')!, {
   subtree: true,
   childList: true
 });

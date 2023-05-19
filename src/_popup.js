@@ -1,10 +1,10 @@
 const body = document.querySelector('body');
 const form = document.querySelector('form');
-const loginElem = document.getElementById('store-login');
+// const loginElem = document.getElementById('store-login');
 const logoutElem = document.getElementById('logout');
 const avatarElem = document.getElementById('avatar');
 const input = document.getElementById('input');
-const buttonElem = document.getElementById('submit-button');
+// const buttonElem = document.getElementById('submit-button');
 const loaderElem = document.querySelector('.lds-ring');
 const errorElem = document.getElementById('error');
 const savedDataElem = document.getElementById('saved-data');
@@ -14,19 +14,19 @@ const savedIgnoredElem = document.getElementById('saved-ignored');
 const savedTimeElem = document.getElementById('saved-time');
 const resetButtonElem = document.getElementById('reset-button');
 
-let loading = true;
+// let loading = true;
 
-const startLoading = () => {
-  buttonElem.className = 'loading';
-  loginElem.className = 'loading';
-  loading = true;
-};
+// const startLoading = () => {
+//   buttonElem.className = 'loading';
+//   loginElem.className = 'loading';
+//   loading = true;
+// };
 
-const stopLoading = () => {
-  buttonElem.className = undefined;
-  loginElem.className = undefined;
-  loading = false;
-};
+// const stopLoading = () => {
+//   buttonElem.className = undefined;
+//   loginElem.className = undefined;
+//   loading = false;
+// };
 
 const updateValues = (storage, error, steamId, avatar) => {
   storage &&
@@ -121,23 +121,23 @@ logoutElem.addEventListener('click', e => {
   updateSavedData({});
 });
 
-loginElem.addEventListener('click', e => {
-  e.preventDefault();
-  if (loading) return;
-  startLoading();
+// loginElem.addEventListener('click', e => {
+//   e.preventDefault();
+//   if (loading) return;
+//   startLoading();
 
-  browser.runtime
-    .sendMessage({ action: 'getUserData' })
-    .then(r => {
-      if (r.noUserData) {
-        updateValues(
-          false,
-          'Looks like you are not logged in through store.steampowered.com'
-        );
-        return;
-      }
-      body.classList.add('store');
-      updateSavedData(r);
-    })
-    .finally(stopLoading);
-});
+//   browser.runtime
+//     .sendMessage({ action: 'getUserData' })
+//     .then(r => {
+//       if (r.noUserData) {
+//         updateValues(
+//           false,
+//           'Looks like you are not logged in through store.steampowered.com'
+//         );
+//         return;
+//       }
+//       body.classList.add('store');
+//       updateSavedData(r);
+//     })
+//     .finally(stopLoading);
+// });
