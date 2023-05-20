@@ -1,14 +1,19 @@
-import { ChangeEvent, useCallback, useState } from 'react';
+import { ChangeEvent, useCallback, useEffect, useState } from 'react';
 
-const useField = (id: string, required?: boolean) => {
-  const [value, setValue] = useState('');
+const useField = (id: string, initialValue = '') => {
+  const [value, setValue] = useState(initialValue);
   const [touched, setTouched] = useState(false);
 
-  const error = required && touched && !value;
+  useEffect(() => setValue(initialValue), [initialValue]);
+
+  const error = touched && !value;
 
   return {
-    // Current value for convenient access
-    value,
+    // Meta props of the input
+    meta: {
+      error,
+      helperText: error ? 'Required' : undefined
+    },
     // Props for the TextField
     props: {
       id,
@@ -18,10 +23,7 @@ const useField = (id: string, required?: boolean) => {
           setValue(e.target.value),
         []
       ),
-      onBlur: useCallback(() => setTouched(true), []),
-      required,
-      error,
-      helperText: error ? 'Required' : undefined
+      onBlur: useCallback(() => setTouched(true), [])
     }
   } as const;
 };

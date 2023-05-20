@@ -1,23 +1,29 @@
 import browser from 'webextension-polyfill';
-import { callAction, type Message } from './utils';
+import { callAction, LocalData, type Message } from './utils';
 
 browser.runtime.onMessage.addListener(async (message: Message) => {
-  const { cacheTime, wishlist, library } = await browser.storage.local.get([
-    'cacheTime',
-    'wishlist',
-    'library'
-  ]);
+  const cache = (await browser.storage.local.get(null)) as LocalData;
 
   console.log('Received message:', message);
+  console.log('Cache:', cache);
 
   // Check 1 hour cache time
-  if (new Date().getTime() - new Date(cacheTime).getTime() < 1000 * 60 * 60) {
-    return { wishlist, library };
+  if (
+    cache.cacheTime &&
+    new Date().getTime() - new Date(cache.cacheTime).getTime() < 1000 * 60 * 60
+  )
+    return cache;
+
+  try {
+    const response = await callAction(message);
+    console.log('Returning data:', response);
+
+    if (response.status === 'ok') await browser.storage.local.set(response);
+
+    return response;
+  } catch (e) {
+    console.error(e);
+
+    return { status: 'error', message: 'Unexpected error ocurred.' };
   }
-
-  const response = await callAction(message);
-
-  if (response.status === 'ok') await browser.storage.local.set(response);
-
-  return response;
 });

@@ -84,4 +84,4 @@ export type MessageResponse = Awaited<ReturnType<typeof callAction>>;
 export type LocalData = Omit<
   Extract<MessageResponse, { status: 'ok' }>,
   'status'
->;
+> & { steamId?: string; avatar?: string };

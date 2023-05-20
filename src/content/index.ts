@@ -1,5 +1,6 @@
 import browser from 'webextension-polyfill';
 
+import '../global.css';
 import './content.css';
 
 const toastElem = document.createElement('div');

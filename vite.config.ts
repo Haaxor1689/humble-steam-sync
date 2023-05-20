@@ -9,7 +9,7 @@ const manifest = defineManifest({
   description:
     'Show your library and wishlist games from Steam on Humble Bundle pages.',
   icons: { '128': 'assets/icon.png' },
-  background: { service_worker: 'src/worker/index.ts' },
+  background: { service_worker: 'src/worker/index.ts', type: 'module' },
   action: { default_popup: 'index.html' },
   content_scripts: [
     {

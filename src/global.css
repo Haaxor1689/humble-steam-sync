@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --main-text-color: #dbe2e6;
+
+  --gradient-right: rgba(109, 38, 44, 0.301);
+  --gradient-left: rgba(50, 255, 193, 0.103);
+  --gradient-background: rgba(34, 35, 48, 0.93);
+  --gradient-background-right: rgba(109, 38, 44, 0);
+  --gradient-background-left: rgba(50, 255, 193, 0.103);
+
+  --btn-background: rgba(43, 52, 68);
+  --btn-background-hover: rgb(53, 62, 78);
+  --btn-outline: rgb(93, 102, 118);
+}
+
+body.humble-steam-sync {
+  display: flex;
+  flex-direction: column;
+
+  & #root {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex-grow: 1;
+    gap: 8px;
+    padding: 8px 12px;
+    margin: 0;
+    color: var(--main-text-color);
+    background: radial-gradient(
+        farthest-side at top right,
+        var(--gradient-right),
+        transparent 500px
+      ),
+      radial-gradient(
+        farthest-corner at top left,
+        var(--gradient-left),
+        transparent 600px
+      ),
+      radial-gradient(
+        farthest-corner at bottom right,
+        var(--gradient-background-right),
+        transparent 500px
+      ),
+      radial-gradient(
+        farthest-corner at bottom left,
+        var(--gradient-background-left),
+        transparent 600px
+      );
+    background-color: var(--gradient-background);
+    font-size: 0.7rem;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.4;
+  }
+}
+
+.hss-button {
+  color: var(--main-text-color);
+  border: 1px solid var(--btn-outline);
+  background-color: var(--btn-background);
+  border-radius: 4px;
+  text-transform: uppercase;
+  padding: 8px 6px;
+  transition: background-color 0.32s ease-in-out;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+
+  &:hover {
+    background-color: var(--btn-background-hover);
+  }
+}
