@@ -13,7 +13,7 @@ const manifest = defineManifest({
   action: { default_popup: 'index.html' },
   content_scripts: [
     {
-      js: ['src/content/index.ts'],
+      js: ['src/content/main.tsx'],
       matches: [
         'https://*.humblebundle.com/membership/*',
         'https://*.humblebundle.com/games/*',

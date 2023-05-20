@@ -1,9 +1,6 @@
 import browser from 'webextension-polyfill';
 import { z } from 'zod';
-
-const notUndef = <T extends unknown | undefined>(
-  obj: T
-): obj is Exclude<T, undefined> => !!obj;
+import { notUndef } from '../utils';
 
 export type Message =
   | { action: 'getUserData' }
@@ -35,7 +32,7 @@ const fetchOwnedGames = (steamId: string) =>
           ignored: [],
           recommended: [],
           cacheTime: new Date().toLocaleString()
-        } satisfies LocalData)
+        } satisfies LocalData as LocalData)
     );
 
 const UserData = z.object({
@@ -74,7 +71,7 @@ const fetchStoreData = async () => {
     recommended: mapApps(userData.rgRecommendedApps, apps),
     cacheTime: new Date().toLocaleString(),
     store: true
-  } satisfies LocalData;
+  } satisfies LocalData as LocalData;
 };
 
 const steamLogIn = async (rawId: string) => {
@@ -135,7 +132,7 @@ const getUserData = async () => {
     return { status: 'noData' } as const;
   } catch (e) {
     console.error(e);
-    return { status: 'error', message: 'Unexpected error ocurred.' } as const;
+    throw new Error('Unexpected error ocurred.');
   }
 };
 
