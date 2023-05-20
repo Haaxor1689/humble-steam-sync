@@ -107,19 +107,19 @@ form.addEventListener('submit', e => {
     .finally(stopLoading);
 });
 
-resetButtonElem.addEventListener('click', e => {
-  e.preventDefault();
-  browser.storage.local.clear();
-  updateValues();
-  updateSavedData({});
-});
+// resetButtonElem.addEventListener('click', e => {
+//   e.preventDefault();
+//   browser.storage.local.clear();
+//   updateValues();
+//   updateSavedData({});
+// });
 
-logoutElem.addEventListener('click', e => {
-  e.preventDefault();
-  browser.storage.local.clear();
-  updateValues();
-  updateSavedData({});
-});
+// logoutElem.addEventListener('click', e => {
+//   e.preventDefault();
+//   browser.storage.local.clear();
+//   updateValues();
+//   updateSavedData({});
+// });
 
 // loginElem.addEventListener('click', e => {
 //   e.preventDefault();

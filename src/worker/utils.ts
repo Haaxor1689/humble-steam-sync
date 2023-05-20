@@ -9,11 +9,12 @@ export type Message =
   | { action: 'getOwnedGames'; steamId: string };
 
 type AppList = { applist: { apps: { appid: number; name: string }[] } };
+
 const UserData = z.object({
   rgOwnedApps: z.array(z.number()),
   rgWishlist: z.array(z.number()),
   rgIgnoredApps: z.preprocess(
-    v => (v && typeof v === 'object' ? Number(Object.keys(v)) : []),
+    v => (v && typeof v === 'object' ? Object.keys(v).map(Number) : []),
     z.array(z.number())
   ),
   rgRecommendedApps: z.array(z.number())
@@ -23,7 +24,15 @@ const getOwnedGames = (steamId: string) =>
   fetch(`https://humble-steam-sync.haaxor1689.dev/api/${steamId}/games`)
     .then(r => r.json())
     .then(
-      r => ({ status: 'ok', library: r, wishlist: [], ignored: [] } as const)
+      r =>
+        ({
+          status: 'ok',
+          library: r,
+          wishlist: [],
+          ignored: [],
+          recommended: [],
+          cacheTime: new Date().toLocaleString()
+        } as const)
     );
 
 const mapApps = (items: number[], apps: AppList) =>
@@ -49,7 +58,8 @@ const getUserData = async () => {
     wishlist: mapApps(userData.rgWishlist, apps),
     library: mapApps(userData.rgOwnedApps, apps),
     ignored: mapApps(userData.rgIgnoredApps, apps),
-    recommended: mapApps(userData.rgRecommendedApps, apps)
+    recommended: mapApps(userData.rgRecommendedApps, apps),
+    cacheTime: new Date().toLocaleString()
   } as const;
 };
 
@@ -71,3 +81,7 @@ export const callAction = (message: Message) => {
 };
 
 export type MessageResponse = Awaited<ReturnType<typeof callAction>>;
+export type LocalData = Omit<
+  Extract<MessageResponse, { status: 'ok' }>,
+  'status'
+>;

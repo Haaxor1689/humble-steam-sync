@@ -15,15 +15,9 @@ browser.runtime.onMessage.addListener(async (message: Message) => {
     return { wishlist, library };
   }
 
-  const { status, ...r} = await callAction(message);
+  const response = await callAction(message);
 
-  if (status !== 'ok') return r;
+  if (response.status === 'ok') await browser.storage.local.set(response);
 
-  const data = {
-    cacheTime: new Date().toLocaleString(),
-    ...r
-  };
-
-  browser.storage.local.set(data);
-  return data;
+  return response;
 });

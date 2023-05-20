@@ -1,5 +1,7 @@
 import browser from 'webextension-polyfill';
 
+import './content.css';
+
 const toastElem = document.createElement('div');
 toastElem.className = 'hss-toast';
 
@@ -67,42 +69,44 @@ const matchesItem = (game: string) => (item: string) =>
  * @param {{ wishlist: string[]; library: string[]; ignored: string[] }} response
  * @returns {((item: Element) => void)}
  */
-const insertTag = ({ wishlist, library, ignored }) => (item: Element) => {
-  const game = getItemName(item);
+const insertTag =
+  ({ wishlist, library, ignored }) =>
+  (item: Element) => {
+    const game = getItemName(item);
 
-  const wish = wishlist?.find(matchesItem(game));
-  const lib = library?.find(matchesItem(game));
-  const ign = ignored?.find(matchesItem(game));
+    const wish = wishlist?.find(matchesItem(game));
+    const lib = library?.find(matchesItem(game));
+    const ign = ignored?.find(matchesItem(game));
 
-  const source = wish
-    ? 'on wishlist'
-    : lib
-    ? 'in library'
-    : ign
-    ? 'ignored'
-    : undefined;
-  if (!source) return;
+    const source = wish
+      ? 'on wishlist'
+      : lib
+      ? 'in library'
+      : ign
+      ? 'ignored'
+      : undefined;
+    if (!source) return;
 
-  const tagElem = document.createElement('a');
-  tagElem.href = `https://store.steampowered.com/search/?term=${wish ??
-    lib ??
-    ign}`;
-  tagElem.target = `_blank`;
-  tagElem.innerText = source;
-  tagElem.className = 'hss-tag';
-  tagElem.dataset.source = source;
+    const tagElem = document.createElement('a');
+    tagElem.href = `https://store.steampowered.com/search/?term=${
+      wish ?? lib ?? ign
+    }`;
+    tagElem.target = `_blank`;
+    tagElem.innerText = source;
+    tagElem.className = 'hss-tag';
+    tagElem.dataset.source = source;
 
-  if (ign) item.classList.add('hss-ignored');
+    if (ign) item.classList.add('hss-ignored');
 
-  if (item.localName === 'tr') {
-    const td = item.querySelector('.platform');
-    td.style = 'position: relative';
-    td.appendChild(tagElem);
-    return;
-  }
+    if (item.localName === 'tr') {
+      const td = item.querySelector('.platform');
+      td.style = 'position: relative';
+      td.appendChild(tagElem);
+      return;
+    }
 
-  item.appendChild(tagElem);
-};
+    item.appendChild(tagElem);
+  };
 
 /** @param {{ wishlist: string[]; library: string[] }} response */
 const processResponse = r => {

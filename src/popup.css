@@ -110,15 +110,9 @@ button.loading span {
 }
 
 #logout {
-  display: none;
   position: absolute;
   top: 8px;
   right: 12px;
-}
-
-.steam-id #logout,
-.store #logout {
-  display: block;
 }
 
 .logged-in:before {
