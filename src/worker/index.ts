@@ -1,10 +1,110 @@
 import browser from 'webextension-polyfill';
-import { callAction, LocalData, type Message } from './utils';
+import { z } from 'zod';
 
-browser.runtime.onMessage.addListener(async (message: Message) => {
+const notUndef = <T extends unknown | undefined>(
+  obj: T
+): obj is Exclude<T, undefined> => !!obj;
+
+export type Message =
+  | { action: 'getUserData' }
+  | { action: 'steamLogIn'; steamId: string };
+
+type LocalData = {
+  status: 'ok';
+  cacheTime?: string;
+  library: string[];
+  wishlist: string[];
+  ignored: string[];
+  recommended: string[];
+  steamId?: string;
+  avatar?: string;
+  store?: boolean;
+};
+
+type AppList = { applist: { apps: { appid: number; name: string }[] } };
+
+const fetchOwnedGames = (steamId: string) =>
+  fetch(`https://humble-steam-sync.haaxor1689.dev/api/${steamId}/games`)
+    .then(r => r.json())
+    .then(
+      r =>
+        ({
+          status: 'ok',
+          library: r,
+          wishlist: [],
+          ignored: [],
+          recommended: [],
+          cacheTime: new Date().toLocaleString()
+        } satisfies LocalData)
+    );
+
+const UserData = z.object({
+  rgOwnedApps: z.array(z.number()),
+  rgWishlist: z.array(z.number()),
+  rgIgnoredApps: z.preprocess(
+    v => (v && typeof v === 'object' ? Object.keys(v).map(Number) : []),
+    z.array(z.number())
+  ),
+  rgRecommendedApps: z.array(z.number())
+});
+
+const mapApps = (items: number[], apps: AppList) =>
+  items
+    .map(g => apps.applist.apps.find(a => a.appid == g)?.name)
+    .filter(notUndef);
+
+const fetchStoreData = async () => {
+  const userData = await fetch(
+    'https://store.steampowered.com/dynamicstore/userdata/'
+  )
+    .then(r => r.json())
+    .then(UserData.parse);
+
+  if (!userData.rgOwnedApps.length) return { status: 'noData' } as const;
+
+  const apps = await fetch(
+    'https://api.steampowered.com/ISteamApps/GetAppList/v2/'
+  ).then(r => r.json());
+
+  return {
+    status: 'ok',
+    wishlist: mapApps(userData.rgWishlist, apps),
+    library: mapApps(userData.rgOwnedApps, apps),
+    ignored: mapApps(userData.rgIgnoredApps, apps),
+    recommended: mapApps(userData.rgRecommendedApps, apps),
+    cacheTime: new Date().toLocaleString(),
+    store: true
+  } satisfies LocalData;
+};
+
+const steamLogIn = async (rawId: string) => {
+  const steamId =
+    rawId.match(
+      /^(?:https?:\/\/)?steamcommunity\.com\/(?:id|profiles)\/(\w+)\/?$/
+    )?.[1] ?? rawId;
+
+  if (!steamId) throw new Error('Invalid Steam Id');
+
+  try {
+    const { avatarmedium } = await fetch(
+      `https://humble-steam-sync.haaxor1689.dev/api/${steamId}/profile`
+    ).then(r => r.json());
+
+    const data = {
+      steamId,
+      avatar: avatarmedium
+    } satisfies Partial<LocalData>;
+    await browser.storage.local.set(data);
+    return data;
+  } catch (e) {
+    console.error(e);
+    throw new Error('Steam account not found');
+  }
+};
+
+const getUserData = async () => {
   const cache = (await browser.storage.local.get(null)) as LocalData;
 
-  console.log('Received message:', message);
   console.log('Cache:', cache);
 
   // Check 1 hour cache time
@@ -15,15 +115,39 @@ browser.runtime.onMessage.addListener(async (message: Message) => {
     return cache;
 
   try {
-    const response = await callAction(message);
-    console.log('Returning data:', response);
+    console.log('Fetching store data');
+    const storeData = await fetchStoreData();
+    if (storeData.status === 'ok') {
+      await browser.storage.local.set(storeData);
+      return { ...cache, ...storeData };
+    }
 
-    if (response.status === 'ok') await browser.storage.local.set(response);
+    if (cache.steamId) {
+      console.log('Fetching owned games');
+      const ownedGames = await fetchOwnedGames(cache.steamId);
 
-    return response;
+      if (ownedGames.status === 'ok') {
+        await browser.storage.local.set(storeData);
+        return { ...cache, ...ownedGames };
+      }
+    }
+
+    return { status: 'noData' } as const;
   } catch (e) {
     console.error(e);
+    return { status: 'error', message: 'Unexpected error ocurred.' } as const;
+  }
+};
 
-    return { status: 'error', message: 'Unexpected error ocurred.' };
+export type SteamLogInResponse = Awaited<ReturnType<typeof steamLogIn>>;
+export type GetUserDataResponse = Awaited<ReturnType<typeof getUserData>>;
+
+browser.runtime.onMessage.addListener(async (message: Message) => {
+  console.log('Received message:', message);
+  switch (message.action) {
+    case 'steamLogIn':
+      return await steamLogIn(message.steamId);
+    case 'getUserData':
+      return await getUserData();
   }
 });

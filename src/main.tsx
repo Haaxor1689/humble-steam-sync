@@ -11,10 +11,10 @@ import {
 import { LogOut, LogIn, RefreshCcw, Check } from 'lucide-react';
 
 import {
-  type LocalData,
-  type MessageResponse,
+  GetUserDataResponse,
+  SteamLogInResponse,
   type Message
-} from './worker/utils';
+} from './worker';
 import useField from './hooks/useField';
 import Button from './components/Button';
 import Spinner from './components/Spinner';
@@ -22,91 +22,49 @@ import Spinner from './components/Spinner';
 import './global.css';
 
 const Query = {
-  LocalData: ['localData'],
   UserData: ['userData']
 };
 
 const App = () => {
-  const localData = useQuery(
-    Query.LocalData,
-    async () => (await browser.storage.local.get(null)) as LocalData
-  );
-  console.log('localData', localData.data);
-
-  const userData = useQuery(
+  const { data, isFetching, error } = useQuery(
     Query.UserData,
     async () =>
       (await browser.runtime.sendMessage({
         action: 'getUserData'
-      } satisfies Message)) as MessageResponse,
-    { onSuccess: () => queryClient.invalidateQueries(Query.LocalData) }
+      } satisfies Message)) as GetUserDataResponse,
+    { refetchOnWindowFocus: false }
   );
-  console.log('userData', userData.data);
+  console.log('userData', data);
 
-  const steamIdField = useField('steamId', localData.data?.steamId);
+  const steamIdField = useField(
+    'steamId',
+    data?.status === 'ok' ? data.steamId : undefined
+  );
 
-  const getOwnedGames = useMutation(
+  const steamLogIn = useMutation(
     async (steamId: string) =>
       (await browser.runtime.sendMessage({
-        action: 'getOwnedGames',
+        action: 'steamLogIn',
         steamId
-      } satisfies Message)) as MessageResponse,
-    { onSuccess: () => queryClient.invalidateQueries(Query.LocalData) }
+      } satisfies Message)) as SteamLogInResponse,
+    { onSuccess: () => queryClient.invalidateQueries(Query.UserData) }
   );
 
-  const getUserProfile = useMutation(
-    async () => {
-      const steamId =
-        steamIdField.props.value.match(
-          /^(?:https?:\/\/)?steamcommunity\.com\/(?:id|profiles)\/(\w+)\/?$/
-        )?.[1] ?? steamIdField.props.value;
-
-      if (!steamId) throw new Error('Invalid Steam Id');
-
-      const profile = await fetch(
-        `https://humble-steam-sync.haaxor1689.dev/api/${steamId}/profile`
-      ).then(r => r.json());
-
-      if (!profile) throw new Error('No player found');
-
-      return { steamId, avatar: profile.avatarmedium as string };
-    },
-    {
-      onSuccess: v => {
-        browser.storage.local.set(v);
-        queryClient.invalidateQueries(Query.LocalData);
-      }
-    }
-  );
-
-  const loading =
-    localData.isFetching ||
-    userData.isFetching ||
-    getOwnedGames.isLoading ||
-    getUserProfile.isLoading;
-  const error =
-    localData.error ??
-    userData.error ??
-    getOwnedGames.error ??
-    getUserProfile.error;
-
-  const storeLogIn = userData.data?.status === 'ok';
-  const loggedIn = !!localData.data?.cacheTime;
+  const err = error ?? steamLogIn.error;
 
   return (
     <>
-      {loading && (
+      {(isFetching || steamLogIn.isLoading) && (
         <div className="text-[var(--main-text-color)] flex justify-center absolute top-0 left-0 right-0 bottom-0 items-center backdrop-blur-sm">
           <Spinner />
         </div>
       )}
       <div className="flex justify-between items-center gap-2">
         <h1 className="text-2xl">Settings</h1>
-        {loggedIn && (
+        {data?.status === 'ok' && (
           <Button
             onClick={() => {
               browser.storage.local.clear();
-              queryClient.invalidateQueries(Query.LocalData);
               queryClient.invalidateQueries(Query.UserData);
             }}
           >
@@ -116,7 +74,7 @@ const App = () => {
       </div>
 
       {/* Store login */}
-      {storeLogIn ? (
+      {data?.status === 'ok' && data.store ? (
         <div className="flex items-center gap-2 whitespace-nowrap">
           <Check />
           <p className="flex-grow">
@@ -131,67 +89,62 @@ const App = () => {
           </p>
         </div>
       ) : (
-        <>
-          <div className="flex items-center gap-2">
-            <p className="flex-grow whitespace-nowrap">
-              Check{' '}
-              <a
-                href="https://store.steampowered.com/"
-                target="_blank"
-                className="underline"
-              >
-                store.steampowered.com
-              </a>{' '}
-              login:
-            </p>
-            <Button
-              onClick={() => queryClient.invalidateQueries(Query.UserData)}
+        <div className="flex items-center gap-2">
+          <p className="flex-grow whitespace-nowrap">
+            Check{' '}
+            <a
+              href="https://store.steampowered.com/"
+              target="_blank"
+              className="underline"
             >
-              <RefreshCcw size={18} />
-            </Button>
-          </div>
-
-          {/* Steam api login */}
-          <form
-            className="flex items-end gap-2"
-            onSubmit={async e => {
-              e.preventDefault();
-              const { steamId } = await getUserProfile.mutateAsync();
-              await getOwnedGames.mutateAsync(steamId);
-            }}
-          >
-            <div
-              className={cls(
-                'w-[36px] aspect-square border border-dashed border-[var(--btn-outline)] bg-cover',
-                { 'border-none': !!localData.data?.avatar }
-              )}
-              style={
-                localData.data?.avatar
-                  ? { backgroundImage: `url(${localData.data?.avatar})` }
-                  : undefined
-              }
-            />
-            <div className="flex flex-col flex-grow">
-              <label htmlFor="input">SteamId or CustomUrl:</label>
-              <input
-                className="mt-1 text-md text-[var(--main-text-color)] border-b border-[var(--btn-outline)] bg-transparent"
-                {...steamIdField.props}
-              />
-            </div>
-            <Button type="submit">
-              <LogIn size={18} />
-            </Button>
-          </form>
-        </>
+              store.steampowered.com
+            </a>{' '}
+            login:
+          </p>
+          <Button onClick={() => queryClient.invalidateQueries(Query.UserData)}>
+            <RefreshCcw size={18} />
+          </Button>
+        </div>
       )}
 
-      {error && (
+      {/* Steam api login */}
+      <form
+        className="flex items-end gap-2"
+        onSubmit={async e => {
+          e.preventDefault();
+          await steamLogIn.mutateAsync(steamIdField.props.value);
+        }}
+      >
+        <div
+          className={cls(
+            'w-[48px] aspect-square border border-dashed border-[var(--btn-outline)] bg-cover',
+            { 'border-none': data?.status == 'ok' && !!data?.avatar }
+          )}
+          style={
+            data?.status == 'ok' && data?.avatar
+              ? { backgroundImage: `url(${data?.avatar})` }
+              : undefined
+          }
+        />
+        <div className="flex flex-col flex-grow">
+          <label htmlFor="input">SteamId or CustomUrl:</label>
+          <input
+            className="mt-1 text-lg text-[var(--main-text-color)] border-b border-[var(--btn-outline)] bg-transparent"
+            {...steamIdField.props}
+          />
+        </div>
+        <Button type="submit">
+          <LogIn size={18} />
+        </Button>
+      </form>
+
+      {err && (
         <p className="text-[#ff4646]">
-          {error instanceof Error ? error.message : 'Unexpected error occured'}
+          {err instanceof Error ? err.message : 'Unexpected error occured'}
         </p>
       )}
 
-      {!loggedIn && (
+      {data?.status !== 'ok' && (
         <details>
           <summary className="text-xl cursor-pointer">
             <h2 className="inline">Instructions</h2>
@@ -213,30 +166,28 @@ const App = () => {
         </details>
       )}
 
-      {loggedIn && (
+      {data?.status === 'ok' && (
         <details>
           <summary className="text-xl cursor-pointer">
             <h2 className="inline">Saved data</h2>
           </summary>
           <div className="grid grid-cols-2">
             <div>Last updated at:</div>
-            <div>{localData.data?.cacheTime}</div>
+            <div>{data.cacheTime}</div>
             <div>Library items:</div>
-            <div>{localData.data?.library.length}</div>
+            <div>{data.library.length}</div>
             <div>Wishlisted items:</div>
-            <div>{localData.data?.wishlist.length}</div>
+            <div>{data.wishlist.length}</div>
             <div>Ignored items:</div>
-            <div>{localData.data?.ignored.length}</div>
+            <div>{data.ignored.length}</div>
             <div>Recommended items:</div>
-            <div>{localData.data?.recommended.length}</div>
+            <div>{data.recommended.length}</div>
           </div>
           <Button
             className="mt-2"
             onClick={async () => {
               await browser.storage.local.set({ cacheTime: null });
-              storeLogIn
-                ? queryClient.invalidateQueries(Query.UserData)
-                : getOwnedGames.mutate(localData.data?.steamId!);
+              queryClient.invalidateQueries(Query.UserData);
             }}
           >
             <RefreshCcw size={16} /> Refresh
