@@ -1,7 +1,15 @@
 import browser from 'webextension-polyfill';
 import cls from 'classnames';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { LogOut, LogIn, RefreshCcw, Check } from 'lucide-react';
+import {
+  LogOut,
+  LogIn,
+  RefreshCcw,
+  Check,
+  Bug,
+  Github,
+  History
+} from 'lucide-react';
 
 import {
   GetUserDataResponse,
@@ -57,6 +65,7 @@ const Popup = () => {
               browser.storage.local.clear();
               queryClient.invalidateQueries(UserDataQuery);
             }}
+            title="SignOut"
           >
             <LogOut />
           </Button>
@@ -91,7 +100,10 @@ const Popup = () => {
             </a>{' '}
             login:
           </p>
-          <Button onClick={() => queryClient.invalidateQueries(UserDataQuery)}>
+          <Button
+            onClick={() => queryClient.invalidateQueries(UserDataQuery)}
+            title="Retry"
+          >
             <RefreshCcw size={18} />
           </Button>
         </div>
@@ -123,7 +135,7 @@ const Popup = () => {
             {...steamIdField.props}
           />
         </div>
-        <Button type="submit">
+        <Button type="submit" title="SignIn">
           <LogIn size={18} />
         </Button>
       </form>
@@ -136,7 +148,7 @@ const Popup = () => {
 
       {data?.status !== 'ok' && (
         <details>
-          <summary className="text-xl cursor-pointer">
+          <summary className="text-lg cursor-pointer">
             <h2 className="inline">Instructions</h2>
           </summary>
           <p>
@@ -158,7 +170,7 @@ const Popup = () => {
 
       {data?.status === 'ok' && (
         <details>
-          <summary className="text-xl cursor-pointer">
+          <summary className="text-lg cursor-pointer">
             <h2 className="inline">Saved data</h2>
           </summary>
           <div className="grid grid-cols-2">
@@ -184,6 +196,35 @@ const Popup = () => {
           </Button>
         </details>
       )}
+
+      <details>
+        <summary className="text-lg cursor-pointer">
+          <h2 className="inline">About</h2>
+        </summary>
+
+        <p className="text-sm flex gap-1 items-center">
+          <History size={16} />
+          <span>v2.0</span>
+        </p>
+
+        <a
+          href="https://github.com/Haaxor1689/humble-steam-sync"
+          target="_blank"
+          className="text-[#7cb8e4] text-sm flex gap-1 items-center"
+        >
+          <Github size={16} />
+          <span>Homepage</span>
+        </a>
+
+        <a
+          href="https://github.com/Haaxor1689/humble-steam-sync/issues/new"
+          target="_blank"
+          className="text-[#ff4646] text-sm flex gap-1 items-center"
+        >
+          <Bug size={16} />
+          <span>Report issues</span>
+        </a>
+      </details>
     </>
   );
 };

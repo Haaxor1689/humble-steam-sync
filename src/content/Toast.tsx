@@ -1,8 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import browser from 'webextension-polyfill';
 import { GetUserDataResponse, Message } from '../worker';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import cls from 'classnames';
+import Spinner from '../components/Spinner';
+import { Bug, Github, UserCheck, UserX, XOctagon } from 'lucide-react';
 
 const Toast = () => {
   const { mutateAsync, data, isLoading, error } = useMutation(
@@ -11,7 +13,8 @@ const Toast = () => {
         action: 'getUserData'
       } satisfies Message)) as GetUserDataResponse
   );
-  console.log('userData', data);
+
+  const [fade, setFade] = useState(false);
 
   const getItemName = (item: HTMLElement) =>
     // Library
@@ -119,17 +122,24 @@ const Toast = () => {
     });
 
     (async () => {
-      // Load user data
-      const cache = await mutateAsync();
+      try {
+        // Load user data
+        const cache = await mutateAsync();
+        if (cache.status !== 'ok') throw new Error('No data');
 
-      // Insert tags to existing DOM
-      getItemElements(document).forEach(e => insertTag(e, cache));
+        // Insert tags to existing DOM
+        getItemElements(document).forEach(e => insertTag(e, cache));
 
-      // Listen for DOM changes
-      observer.observe(document.querySelector('body')!, {
-        subtree: true,
-        childList: true
-      });
+        // Listen for DOM changes
+        observer.observe(document.querySelector('body')!, {
+          subtree: true,
+          childList: true
+        });
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setTimeout(() => setFade(true), 2000);
+      }
     })();
     return () => {
       observer.disconnect();
@@ -139,22 +149,40 @@ const Toast = () => {
   return (
     <div
       className={cls('hss-toast', {
-        'hss-shake': data && data?.status !== 'ok',
-        'hss-highlight': isLoading
+        'hss-shake': error || data?.status === 'noData',
+        'hss-highlight': !fade
       })}
     >
-      <h3 className="text-xl text-white">Steam tags extension</h3>
-      <p className="text-[#7cb8e4]">
-        {isLoading
-          ? 'Loading...'
-          : error
-          ? error instanceof Error
-            ? error.message
-            : 'Unexpected error ocurred'
-          : data?.status === 'noData'
-          ? 'Please login to Steam store or enter your SteamId in extension settings'
-          : 'Steam tags added'}
-      </p>
+      <h3 className="text-lg text-white">Steam tags extension</h3>
+      <div className="text-[#7cb8e4] flex gap-1 items-center">
+        {isLoading ? (
+          <>
+            <Spinner size={16} />
+            <span>Loading tags...</span>
+          </>
+        ) : error ? (
+          <>
+            <XOctagon size={16} />
+            <span>
+              {error instanceof Error
+                ? error.message
+                : 'Unexpected error ocurred'}
+            </span>
+          </>
+        ) : data?.status === 'noData' ? (
+          <>
+            <UserX size={16} />
+            <span>
+              No tag info found, please log in through extension settings
+            </span>
+          </>
+        ) : (
+          <>
+            <UserCheck size={16} />
+            <span>Steam tags added</span>
+          </>
+        )}
+      </div>
     </div>
   );
 };

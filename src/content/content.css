@@ -13,7 +13,7 @@
   color: #c6d4df;
   padding: 16px;
   z-index: 1;
-  transition: opacity 0.32s ease-in-out;
+  transition: opacity 0.5s ease-in-out;
   opacity: 0.1;
 
   &:hover,

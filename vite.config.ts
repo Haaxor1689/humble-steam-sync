@@ -1,13 +1,15 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { crx, defineManifest } from '@crxjs/vite-plugin';
+import fs from 'fs-extra';
+
+const packageJson = fs.readJSONSync('./package.json');
 
 const manifest = defineManifest({
   manifest_version: 3,
-  version: '1.5',
   name: 'Steam tags for Humble Bundle',
-  description:
-    'Show your library and wishlist games from Steam on Humble Bundle pages.',
+  version: packageJson.version,
+  description: packageJson.description,
   icons: { '128': 'assets/icon.png' },
   background: { service_worker: 'src/worker/index.ts', type: 'module' },
   action: { default_popup: 'index.html' },
