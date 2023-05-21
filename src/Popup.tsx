@@ -129,7 +129,7 @@ const Popup = () => {
           }
         />
         <div className="flex flex-col flex-grow">
-          <label htmlFor="input">SteamId or CustomUrl:</label>
+          <label htmlFor={steamIdField.props.id}>SteamId or CustomUrl:</label>
           <input
             className="mt-1 text-lg text-[var(--main-text-color)] border-b border-[var(--btn-outline)] bg-transparent"
             {...steamIdField.props}

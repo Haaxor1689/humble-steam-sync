@@ -1,10 +1,13 @@
 import browser from 'webextension-polyfill';
 import { z } from 'zod';
 import { notUndef } from '../utils';
+import { SuggestionSchema } from '../../api/_db';
 
 export type Message =
+  | { action: 'suggestTag'; suggestion: SuggestionSchema }
   | { action: 'getUserData' }
-  | { action: 'steamLogIn'; steamId: string };
+  | { action: 'steamLogIn'; steamId: string }
+  | { action: 'getTagMappings' };
 
 type LocalData = {
   status: 'ok';
@@ -52,7 +55,7 @@ const mapApps = (items: number[], apps: AppList) =>
 
 const fetchStoreData = async () => {
   const userData = await fetch(
-    'https://store.steampowered.com/dynamicstore/userdata/'
+    `https://store.steampowered.com/dynamicstore/userdata/?cacheRefresh=${Math.random()}`
   )
     .then(r => r.json())
     .then(UserData.parse);
@@ -136,12 +139,35 @@ const getUserData = async () => {
   }
 };
 
+export const suggestTag = async (suggestion: SuggestionSchema) => {
+  const response = await fetch(
+    'https://humble-steam-sync.haaxor1689.dev/api/mappings/suggest',
+    { method: 'POST', body: JSON.stringify(suggestion) }
+  );
+  const parsed = (await response.json()) as
+    | { status: 'exists' | 'created' | 'badRequest' }
+    | { status: 'error'; message: string };
+  return parsed;
+};
+
+export const getTagMappings = async () => {
+  const response = await fetch(
+    'https://humble-steam-sync.haaxor1689.dev/api/mappings/list'
+  );
+  const parsed = (await response.json()) as SuggestionSchema[];
+  return parsed;
+};
+
 export type SteamLogInResponse = Awaited<ReturnType<typeof steamLogIn>>;
 export type GetUserDataResponse = Awaited<ReturnType<typeof getUserData>>;
 
 browser.runtime.onMessage.addListener(async (message: Message) => {
   console.log('Received message:', message);
   switch (message.action) {
+    case 'suggestTag':
+      return await suggestTag(message.suggestion);
+    case 'getTagMappings':
+      return await getTagMappings();
     case 'steamLogIn':
       return await steamLogIn(message.steamId);
     case 'getUserData':

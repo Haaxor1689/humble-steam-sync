@@ -1,7 +1,5 @@
-.hss-toast {
-  position: fixed;
-  left: 16px;
-  bottom: 16px;
+.hss-background {
+  color: #c6d4df;
   background: linear-gradient(
     -60deg,
     rgba(226, 244, 255, 0.3) 5%,
@@ -9,8 +7,13 @@
   );
   background-color: rgb(27, 40, 56);
   border-radius: 4px;
+}
+
+.hss-toast {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
   font-size: 13px;
-  color: #c6d4df;
   padding: 16px;
   z-index: 1;
   transition: opacity 0.5s ease-in-out;

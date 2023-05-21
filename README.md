@@ -18,6 +18,13 @@ There are 2 ways of using this extension:
 
 ## Changelog
 
+**v2.1:**
+
+- Fixed problem with steam store data returning empty cached value
+- Fixed adding of tags to new items not present on first page load
+- Added tags to store product detail page
+- Added report missing tag form
+
 **v2.0:**
 
 - Migrated to manifest v3

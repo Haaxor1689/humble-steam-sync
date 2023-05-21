@@ -12,7 +12,8 @@ const useField = (id: string, initialValue = '') => {
     // Meta props of the input
     meta: {
       error,
-      helperText: error ? 'Required' : undefined
+      helperText: error ? 'Required' : undefined,
+      setValue
     },
     // Props for the TextField
     props: {

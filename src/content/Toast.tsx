@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import browser from 'webextension-polyfill';
-import { GetUserDataResponse, Message } from '../worker';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { GetUserDataResponse, Message, getTagMappings } from '../worker';
+import { useMutation } from '@tanstack/react-query';
 import cls from 'classnames';
 import Spinner from '../components/Spinner';
-import { Bug, Github, UserCheck, UserX, XOctagon } from 'lucide-react';
+import { FileWarning, UserCheck, UserX, XOctagon } from 'lucide-react';
+import DialogButton from '../components/DialogButton';
+
+import Suggestion from './Suggestion';
 
 const Toast = () => {
   const { mutateAsync, data, isLoading, error } = useMutation(
@@ -12,6 +15,12 @@ const Toast = () => {
       (await browser.runtime.sendMessage({
         action: 'getUserData'
       } satisfies Message)) as GetUserDataResponse
+  );
+  const tagMappings = useMutation(
+    async () =>
+      (await browser.runtime.sendMessage({
+        action: 'getTagMappings'
+      } satisfies Message)) as ReturnType<typeof getTagMappings>
   );
 
   const [fade, setFade] = useState(false);
@@ -29,6 +38,8 @@ const Toast = () => {
       item.querySelector('.item-title' as 'div')?.innerText ??
       // Store
       item.querySelector('.entity-title' as 'div')?.innerText ??
+      // Store detail
+      item.querySelector('h1.human_name-view' as 'div')?.innerText ??
       ''
     )
       .replace(/ \(Steam\)/i, '')
@@ -60,15 +71,28 @@ const Toast = () => {
       // Store
       ...[...node.querySelectorAll('.entity' as 'div')].filter(n =>
         n.querySelector('.entity-pricing' as 'div')
-      )
+      ),
+      // Store detail
+      node.querySelector('.product-header-view' as 'div')
     ].filter(
-      (n): n is Exclude<typeof n, undefined> =>
+      (n): n is Exclude<typeof n, undefined | null> =>
         !!n && !n?.querySelector('.hss-tag')
     );
   };
 
-  const insertTag = (item: HTMLElement, cache = data) => {
-    const game = getItemName(item);
+  const insertTag = (
+    item: HTMLElement,
+    cache = data,
+    mappings = tagMappings.data
+  ) => {
+    console.log(mappings);
+
+    let game = getItemName(item);
+    game =
+      mappings
+        ?.find(i => i.humble_name)
+        ?.steam_name?.replace(/\W/g, '')
+        .toLowerCase() ?? game;
 
     if (cache?.status !== 'ok') {
       console.log(cache);
@@ -97,58 +121,76 @@ const Toast = () => {
     tagElem.className = 'hss-tag';
     tagElem.dataset.source = result[1];
 
-    if (result[1] === 'ignored') item.classList.add('hss-ignored');
+    let target = item;
 
+    // Keys
     if (item.localName === 'tr') {
-      const td = item.querySelector<'td'>('.platform' as never);
-      if (!td) {
+      const newTarget = item.querySelector('.platform' as 'div');
+      if (!newTarget) {
         console.error("Couldn't find elem to connect to");
         return;
       }
-      td.style.position = 'relative';
-      td.appendChild(tagElem);
-      return;
+      target = newTarget;
     }
 
-    item.appendChild(tagElem);
+    // Store detail
+    if (item.classList.contains('product-header-view')) {
+      const newTarget = item.parentElement?.parentElement?.querySelector(
+        '.pricing-info-view' as 'div'
+      );
+      if (!newTarget) {
+        console.error("Couldn't find elem to connect to");
+        return;
+      }
+      target = newTarget;
+    }
+
+    if (result[1] === 'ignored') target.classList.add('hss-ignored');
+
+    target.style.position = 'relative';
+    target.appendChild(tagElem);
   };
 
   useEffect(() => {
-    const observer = new MutationObserver(mutations => {
-      mutations
-        .filter(m => m.type === 'childList')
-        .flatMap(m => [...m.addedNodes].flatMap(getItemElements))
-        .forEach(n => insertTag(n));
-    });
-
+    let observer: MutationObserver | null = null;
     (async () => {
       try {
         // Load user data
+        const mappings = await tagMappings.mutateAsync();
         const cache = await mutateAsync();
+        cache.status === 'ok' && console.log(cache);
+
         if (cache.status !== 'ok') throw new Error('No data');
 
         // Insert tags to existing DOM
-        getItemElements(document).forEach(e => insertTag(e, cache));
+        getItemElements(document).forEach(e => insertTag(e, cache, mappings));
 
         // Listen for DOM changes
+        observer = new MutationObserver(mutations => {
+          mutations
+            .filter(m => m.type === 'childList')
+            .flatMap(m => [...m.addedNodes].flatMap(getItemElements))
+            .forEach(n => insertTag(n, cache, mappings));
+        });
+
         observer.observe(document.querySelector('body')!, {
           subtree: true,
           childList: true
         });
       } catch (e) {
-        console.error(e);
+        console.log(e);
       } finally {
         setTimeout(() => setFade(true), 2000);
       }
     })();
     return () => {
-      observer.disconnect();
+      observer?.disconnect();
     };
   }, []);
 
   return (
     <div
-      className={cls('hss-toast', {
+      className={cls('hss-toast hss-background', {
         'hss-shake': error || data?.status === 'noData',
         'hss-highlight': !fade
       })}
@@ -183,6 +225,20 @@ const Toast = () => {
           </>
         )}
       </div>
+      {data?.status === 'ok' && (
+        <DialogButton clickaway dialog={close => <Suggestion close={close} />}>
+          {open => (
+            <button
+              type="button"
+              onClick={open}
+              className="text-white/60 flex gap-1 items-center"
+            >
+              <FileWarning size={16} />
+              <span>Report missing tag</span>
+            </button>
+          )}
+        </DialogButton>
+      )}
     </div>
   );
 };

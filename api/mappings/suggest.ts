@@ -18,17 +18,18 @@ export default async function profile(request: Request) {
         { status: 400 }
       );
 
-    const results = await db.execute(
+    await db.execute(
       'INSERT INTO suggestions (steam_name, humble_name, approved) VALUES (:steam_name, :humble_name, false)',
       body.data
     );
 
-    console.log({ results });
-
     return new Response(JSON.stringify({ status: 'created' }));
   } catch (e) {
     console.log({ e });
-    if (e instanceof DatabaseError) {
+    if (
+      e instanceof DatabaseError &&
+      e.message.includes('code = AlreadyExists')
+    ) {
       return new Response(JSON.stringify({ status: 'exists' }));
     }
 
