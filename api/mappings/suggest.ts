@@ -25,7 +25,7 @@ export default async function profile(request: Request) {
 
     return new Response(JSON.stringify({ status: 'created' }));
   } catch (e) {
-    console.log({ e });
+    console.log(e);
     if (
       e instanceof DatabaseError &&
       e.message.includes('code = AlreadyExists')

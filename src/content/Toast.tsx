@@ -25,23 +25,24 @@ const Toast = () => {
 
   const [fade, setFade] = useState(false);
 
-  const getItemName = (item: HTMLElement) =>
+  const getRawName = (item: HTMLElement) =>
     // Library
-    (
-      item.querySelector('.text-holder h2' as 'div')?.innerText ??
-      // Keys
-      item.querySelector('.game-name h4' as 'div')?.innerText ??
-      // Choice
-      item.querySelector('.content-choice-title' as 'div')?.innerText ??
-      item.querySelector('[data-machine-name]' as 'div')?.dataset.machineName ??
-      // Bundle
-      item.querySelector('.item-title' as 'div')?.innerText ??
-      // Store
-      item.querySelector('.entity-title' as 'div')?.innerText ??
-      // Store detail
-      item.querySelector('h1.human_name-view' as 'div')?.innerText ??
-      ''
-    )
+    item.querySelector('.text-holder h2' as 'div')?.innerText ??
+    // Keys
+    item.querySelector('.game-name h4' as 'div')?.innerText ??
+    // Choice
+    item.querySelector('.content-choice-title' as 'div')?.innerText ??
+    item.querySelector('[data-machine-name]' as 'div')?.dataset.machineName ??
+    // Bundle
+    item.querySelector('.item-title' as 'div')?.innerText ??
+    // Store
+    item.querySelector('.entity-title' as 'div')?.innerText ??
+    // Store detail
+    item.querySelector('h1.human_name-view' as 'div')?.innerText ??
+    '';
+
+  const getItemName = (item: string) =>
+    item
       .replace(/ \(Steam\)/i, '')
       .replace(/\W/g, '')
       .replace(/_/g, '')
@@ -85,17 +86,14 @@ const Toast = () => {
     cache = data,
     mappings = tagMappings.data
   ) => {
-    console.log(mappings);
-
-    let game = getItemName(item);
-    game =
+    const rawName = getRawName(item);
+    const game =
       mappings
-        ?.find(i => i.humble_name)
+        ?.find(i => i.humble_name === rawName)
         ?.steam_name?.replace(/\W/g, '')
-        .toLowerCase() ?? game;
+        .toLowerCase() ?? getItemName(rawName);
 
     if (cache?.status !== 'ok') {
-      console.log(cache);
       throw new Error('Data not ready');
     }
 
@@ -158,7 +156,6 @@ const Toast = () => {
         // Load user data
         const mappings = await tagMappings.mutateAsync();
         const cache = await mutateAsync();
-        cache.status === 'ok' && console.log(cache);
 
         if (cache.status !== 'ok') throw new Error('No data');
 
