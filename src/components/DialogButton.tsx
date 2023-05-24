@@ -22,7 +22,7 @@ const DialogButton = ({ clickaway, dialog, children }: Props) => {
           ref={ref}
           onClick={e => clickaway && e.target === ref.current && close()}
           className={cls(
-            'flex h-full w-full items-center justify-center bg-[transparent] backdrop:backdrop-blur-sm'
+            'flex h-full w-full items-center justify-center bg-[transparent] backdrop:backdrop-blur-sm [&:not([open])]:hidden'
           )}
         >
           {dialog(close)}

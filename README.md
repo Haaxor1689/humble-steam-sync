@@ -18,6 +18,10 @@ There are 2 ways of using this extension:
 
 ## Changelog
 
+**v2.3:**
+
+- Added option to show a steam tag next to all items
+
 **v2.2:**
 
 - Fix mappings related bug that broke core functionality

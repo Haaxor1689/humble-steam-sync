@@ -11,10 +11,13 @@ import {
   History
 } from 'lucide-react';
 
+import allTagsPreview from './all-tags-preview.png';
+
 import {
   GetUserDataResponse,
   SteamLogInResponse,
-  type Message
+  type Message,
+  LocalData
 } from './worker';
 import useField from './utils/useField';
 import Button from './components/Button';
@@ -144,6 +147,38 @@ const Popup = () => {
         <p className="text-[#ff4646]">
           {err instanceof Error ? err.message : 'Unexpected error occured'}
         </p>
+      )}
+
+      {data?.status === 'ok' && (
+        <details>
+          <summary className="text-lg cursor-pointer">
+            <h2 className="inline">Options</h2>
+          </summary>
+
+          <div className="flex gap-2 mt-2">
+            <img src={allTagsPreview} className="aspect-auto w-1/3" />
+            <div className="flex flex-col gap-2 items-start">
+              <label htmlFor="alwaysShowTag" className="">
+                Always show a tag with link to Steam store next to all items on
+                HumbleBundle pages?
+              </label>
+
+              <Button
+                type="submit"
+                title={data.alwaysShowTag ? 'Show' : "Don't show"}
+                onClick={async () => {
+                  await browser.storage.local.set({
+                    alwaysShowTag: !data.alwaysShowTag
+                  } satisfies Partial<LocalData>);
+                  queryClient.invalidateQueries(UserDataQuery);
+                }}
+              >
+                {data.alwaysShowTag ? 'Always show' : "Don't show"}
+                <img src="https://store.cloudflare.steamstatic.com/public/images/v6/icon_platform_linux.png" />
+              </Button>
+            </div>
+          </div>
+        </details>
       )}
 
       {data?.status !== 'ok' && (

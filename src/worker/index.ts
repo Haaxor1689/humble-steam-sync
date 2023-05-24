@@ -9,7 +9,7 @@ export type Message =
   | { action: 'steamLogIn'; steamId: string }
   | { action: 'getTagMappings' };
 
-type LocalData = {
+export type LocalData = {
   status: 'ok';
   cacheTime?: string;
   library: string[];
@@ -19,6 +19,7 @@ type LocalData = {
   steamId?: string;
   avatar?: string;
   store?: boolean;
+  alwaysShowTag?: boolean;
 };
 
 type AppList = { applist: { apps: { appid: number; name: string }[] } };

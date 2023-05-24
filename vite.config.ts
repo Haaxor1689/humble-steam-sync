@@ -29,7 +29,7 @@ const manifest = defineManifest({
   permissions: ['storage'],
   host_permissions: [
     'https://store.steampowered.com/dynamicstore/userdata/',
-    'https://humble-steam-sync.haaxor1689.dev/api/*/games',
+    'https://humble-steam-sync.haaxor1689.dev/api/',
     'https://api.steampowered.com/ISteamApps/GetAppList/v2/'
   ]
 });

@@ -110,14 +110,16 @@ const Toast = () => {
       return [item, message];
     }, undefined);
 
-    if (!result) return;
+    if (!cache.alwaysShowTag && !result) return;
 
     const tagElem = document.createElement('a');
-    tagElem.href = `https://store.steampowered.com/search/?term=${result[0]}`;
+    tagElem.href = `https://store.steampowered.com/search/?term=${
+      result?.[0] ?? rawName
+    }`;
     tagElem.target = `_blank`;
-    tagElem.innerText = result[1];
+    tagElem.innerText = result?.[1] ?? '.';
     tagElem.className = 'hss-tag';
-    tagElem.dataset.source = result[1];
+    tagElem.dataset.source = result?.[1] ?? 'other';
 
     let target = item;
 
@@ -143,7 +145,7 @@ const Toast = () => {
       target = newTarget;
     }
 
-    if (result[1] === 'ignored') target.classList.add('hss-ignored');
+    if (result?.[1] === 'ignored') target.classList.add('hss-ignored');
 
     target.style.position = 'relative';
     target.appendChild(tagElem);
