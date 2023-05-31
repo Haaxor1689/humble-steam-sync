@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "dependencies": {
+    "@planetscale/database": "^1.7.0",
+    "@types/node": "^20.2.1",
+    "@vercel/edge": "^0.3.4",
+    "typescript": "^5.0.4",
+    "zod": "^3.21.4"
+  }
+}

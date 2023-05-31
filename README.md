@@ -18,6 +18,12 @@ There are 2 ways of using this extension:
 
 ## Changelog
 
+**v2.4:**
+
+- Fixed wishlist for steam account login
+- Handle coupons
+- Fix some css issues on humble pages
+
 **v2.3:**
 
 - Added option to show a steam tag next to all items

@@ -37,16 +37,16 @@ const Popup = () => {
   );
   console.log('userData', data);
 
-  const steamIdField = useField(
-    'steamId',
-    data?.status === 'ok' ? data.steamId : undefined
+  const steamNameField = useField(
+    'steamName',
+    data?.status === 'ok' ? data.steamName : undefined
   );
 
   const steamLogIn = useMutation(
-    async (steamId: string) =>
+    async (steamName: string) =>
       (await browser.runtime.sendMessage({
         action: 'steamLogIn',
-        steamId
+        steamName
       } satisfies Message)) as SteamLogInResponse,
     { onSuccess: () => queryClient.invalidateQueries(UserDataQuery) }
   );
@@ -117,7 +117,7 @@ const Popup = () => {
         className="flex items-end gap-2"
         onSubmit={async e => {
           e.preventDefault();
-          await steamLogIn.mutateAsync(steamIdField.props.value);
+          await steamLogIn.mutateAsync(steamNameField.props.value);
         }}
       >
         <div
@@ -132,10 +132,10 @@ const Popup = () => {
           }
         />
         <div className="flex flex-col flex-grow">
-          <label htmlFor={steamIdField.props.id}>SteamId or CustomUrl:</label>
+          <label htmlFor={steamNameField.props.id}>SteamId or CustomUrl:</label>
           <input
             className="mt-1 text-lg text-[var(--main-text-color)] border-b border-[var(--btn-outline)] bg-transparent"
-            {...steamIdField.props}
+            {...steamNameField.props}
           />
         </div>
         <Button type="submit" title="SignIn">

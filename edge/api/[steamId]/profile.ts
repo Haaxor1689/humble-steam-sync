@@ -16,5 +16,7 @@ export default async function profile(request: Request) {
 
   console.log('getUserProfile', json);
 
-  return new Response(JSON.stringify(json.response.players[0]));
+  return new Response(
+    JSON.stringify({ steamId, avatar: json.response.players[0].avatarmedium })
+  );
 }

@@ -30,6 +30,7 @@ const manifest = defineManifest({
   host_permissions: [
     'https://store.steampowered.com/dynamicstore/userdata/',
     'https://humble-steam-sync.haaxor1689.dev/api/',
+    'https://*.vercel.app/api/',
     'https://api.steampowered.com/ISteamApps/GetAppList/v2/'
   ]
 });

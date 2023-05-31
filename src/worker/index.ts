@@ -1,12 +1,17 @@
 import browser from 'webextension-polyfill';
 import { z } from 'zod';
 import { notUndef } from '../utils';
-import { SuggestionSchema } from '../../api/_db';
+import { SuggestionSchema } from '../../edge/api/_db';
+
+const apiUrl = import.meta.env.DEV
+  ? 'https://humble-steam-sync-ez1az9oj7-haaxor1689.vercel.app'
+  : 'https://humble-steam-sync.haaxor1689.dev';
+console.log(apiUrl);
 
 export type Message =
   | { action: 'suggestTag'; suggestion: SuggestionSchema }
   | { action: 'getUserData' }
-  | { action: 'steamLogIn'; steamId: string }
+  | { action: 'steamLogIn'; steamName: string }
   | { action: 'getTagMappings' };
 
 export type LocalData = {
@@ -16,6 +21,7 @@ export type LocalData = {
   wishlist: string[];
   ignored: string[];
   recommended: string[];
+  steamName?: string;
   steamId?: string;
   avatar?: string;
   store?: boolean;
@@ -24,20 +30,27 @@ export type LocalData = {
 
 type AppList = { applist: { apps: { appid: number; name: string }[] } };
 
-const fetchOwnedGames = (steamId: string) =>
-  fetch(`https://humble-steam-sync.haaxor1689.dev/api/${steamId}/games`)
-    .then(r => r.json())
-    .then(
-      r =>
-        ({
-          status: 'ok',
-          library: r,
-          wishlist: [],
-          ignored: [],
-          recommended: [],
-          cacheTime: new Date().toLocaleString()
-        } satisfies LocalData as LocalData)
-    );
+const fetchUserLibrary = (steamName: string): Promise<string[]> =>
+  fetch(`${apiUrl}/api/${steamName}/library`).then(r => r.json());
+
+const getWishlistPages = async (
+  steamId: string,
+  page: number = 0
+): Promise<string[]> => {
+  const response = await fetch(
+    `https://store.steampowered.com/wishlist/profiles/${steamId}/wishlistdata/?p=${page}`
+  );
+  if (!response.ok) return [];
+  const parsed = await response.json();
+
+  if (parsed.length === 0 || parsed.success === 2) return [];
+
+  const next = await getWishlistPages(steamId, page + 1);
+  return [
+    ...(Object.values(parsed) as { name: string }[]).map(v => v.name),
+    ...next
+  ];
+};
 
 const UserData = z.object({
   rgOwnedApps: z.array(z.number()),
@@ -78,22 +91,23 @@ const fetchStoreData = async () => {
   } satisfies LocalData as LocalData;
 };
 
-const steamLogIn = async (rawId: string) => {
-  const steamId =
-    rawId.match(
+const steamLogIn = async (rawName: string) => {
+  const steamName =
+    rawName.match(
       /^(?:https?:\/\/)?steamcommunity\.com\/(?:id|profiles)\/(\w+)\/?$/
-    )?.[1] ?? rawId;
+    )?.[1] ?? rawName;
 
-  if (!steamId) throw new Error('Invalid Steam Id');
+  if (!steamName) throw new Error('Invalid Steam Id');
 
   try {
-    const { avatarmedium } = await fetch(
-      `https://humble-steam-sync.haaxor1689.dev/api/${steamId}/profile`
+    const { steamId, avatar } = await fetch(
+      `${apiUrl}/api/${steamName}/profile`
     ).then(r => r.json());
 
     const data = {
       steamId,
-      avatar: avatarmedium
+      steamName,
+      avatar
     } satisfies Partial<LocalData>;
     await browser.storage.local.set(data);
     return data;
@@ -118,6 +132,7 @@ const getUserData = async () => {
   try {
     console.log('Fetching store data');
     const storeData = await fetchStoreData();
+
     if (storeData.status === 'ok') {
       await browser.storage.local.set(storeData);
       return { ...cache, ...storeData };
@@ -125,7 +140,17 @@ const getUserData = async () => {
 
     if (cache.steamId) {
       console.log('Fetching owned games');
-      const ownedGames = await fetchOwnedGames(cache.steamId);
+      const library = await fetchUserLibrary(cache.steamId);
+      const wishlist = await getWishlistPages(cache.steamId);
+
+      const ownedGames = {
+        status: 'ok',
+        library,
+        wishlist,
+        ignored: [],
+        recommended: [],
+        cacheTime: new Date().toLocaleString()
+      } satisfies LocalData as LocalData;
 
       if (ownedGames.status === 'ok') {
         await browser.storage.local.set(storeData);
@@ -141,10 +166,10 @@ const getUserData = async () => {
 };
 
 export const suggestTag = async (suggestion: SuggestionSchema) => {
-  const response = await fetch(
-    'https://humble-steam-sync.haaxor1689.dev/api/mappings/suggest',
-    { method: 'POST', body: JSON.stringify(suggestion) }
-  );
+  const response = await fetch('${apiUrl}/api/mappings/suggest', {
+    method: 'POST',
+    body: JSON.stringify(suggestion)
+  });
   const parsed = (await response.json()) as
     | { status: 'exists' | 'created' | 'badRequest' }
     | { status: 'error'; message: string };
@@ -152,9 +177,7 @@ export const suggestTag = async (suggestion: SuggestionSchema) => {
 };
 
 export const getTagMappings = async () => {
-  const response = await fetch(
-    'https://humble-steam-sync.haaxor1689.dev/api/mappings/list'
-  );
+  const response = await fetch(`${apiUrl}/api/mappings/list`);
   const parsed = (await response.json()) as SuggestionSchema[];
   return parsed;
 };
@@ -170,7 +193,7 @@ browser.runtime.onMessage.addListener(async (message: Message) => {
     case 'getTagMappings':
       return await getTagMappings();
     case 'steamLogIn':
-      return await steamLogIn(message.steamId);
+      return await steamLogIn(message.steamName);
     case 'getUserData':
       return await getUserData();
   }

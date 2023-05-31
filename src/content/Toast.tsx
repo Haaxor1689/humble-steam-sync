@@ -41,12 +41,11 @@ const Toast = () => {
     item.querySelector('h1.human_name-view' as 'div')?.innerText ??
     '';
 
+  const getCleanedUpName = (item: string) =>
+    item.replace(/ \d+% Off Coupon/i, '').replace(/ \(Steam\)/i, '');
+
   const getItemName = (item: string) =>
-    item
-      .replace(/ \(Steam\)/i, '')
-      .replace(/\W/g, '')
-      .replace(/_/g, '')
-      .toLowerCase();
+    getCleanedUpName(item).replace(/\W/g, '').replace(/_/g, '').toLowerCase();
 
   const getItemElements = (node?: Node) => {
     if (!(node instanceof HTMLElement) && !(node instanceof Document))
@@ -114,7 +113,7 @@ const Toast = () => {
 
     const tagElem = document.createElement('a');
     tagElem.href = `https://store.steampowered.com/search/?term=${
-      result?.[0] ?? rawName
+      result?.[0] ?? getCleanedUpName(rawName)
     }`;
     tagElem.target = `_blank`;
     tagElem.innerText = result?.[1] ?? '.';

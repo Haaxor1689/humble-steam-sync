@@ -1,3 +1,9 @@
+*,
+::before,
+::after {
+  box-sizing: initial;
+}
+
 .hss-background {
   color: #c6d4df;
   background: linear-gradient(

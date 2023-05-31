@@ -4,3 +4,5 @@ dist
 publish.*
 source.*
 .vercel
+
+.vercel
