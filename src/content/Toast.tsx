@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import browser from 'webextension-polyfill';
-import { GetUserDataResponse, Message, getTagMappings } from '../worker';
+import { GetUserDataResponse, Item, Message, getTagMappings } from '../worker';
 import { useMutation } from '@tanstack/react-query';
 import cls from 'classnames';
 import Spinner from '../components/Spinner';
@@ -95,6 +95,10 @@ const Toast = () => {
     if (cache?.status !== 'ok') {
       throw new Error('Data not ready');
     }
+    console.log(
+      game,
+      cache.wishlist.find(i => i[0].startsWith('Rain'))
+    );
 
     const result = (
       [
@@ -102,9 +106,11 @@ const Toast = () => {
         [cache.library, 'in library'],
         [cache.ignored, 'ignored']
       ] as const
-    ).reduce<[string, string] | undefined>((r, [arr, message]) => {
+    ).reduce<[Item, string] | undefined>((r, [arr, message]) => {
       if (r) return r;
-      const item = arr.find(i => game === i.replace(/\W/g, '').toLowerCase());
+      const item = arr.find(
+        i => game === i[0].replace(/\W/g, '').toLowerCase()
+      );
       if (!item) return undefined;
       return [item, message];
     }, undefined);
@@ -112,9 +118,11 @@ const Toast = () => {
     if (!cache.alwaysShowTag && !result) return;
 
     const tagElem = document.createElement('a');
-    tagElem.href = `https://store.steampowered.com/search/?term=${
-      result?.[0] ?? getCleanedUpName(rawName)
-    }`;
+    tagElem.href = result?.[0][1]
+      ? `https://store.steampowered.com/app/${result?.[0][1]}`
+      : `https://store.steampowered.com/search/?term=${
+          result?.[0][0] ?? getCleanedUpName(rawName)
+        }`;
     tagElem.target = `_blank`;
     tagElem.innerText = result?.[1] ?? '.';
     tagElem.className = 'hss-tag';

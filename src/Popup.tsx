@@ -8,10 +8,9 @@ import {
   Check,
   Bug,
   Github,
-  History
+  History,
+  AlertCircle
 } from 'lucide-react';
-
-import allTagsPreview from './all-tags-preview.png';
 
 import {
   GetUserDataResponse,
@@ -22,6 +21,9 @@ import {
 import useField from './utils/useField';
 import Button from './components/Button';
 import Spinner from './components/Spinner';
+
+import allTagsPreview from './all-tags-preview.png';
+import packageJson from '../package.json';
 
 const UserDataQuery = ['userData'];
 
@@ -138,7 +140,7 @@ const Popup = () => {
             {...steamNameField.props}
           />
         </div>
-        <Button type="submit" title="SignIn">
+        <Button type="submit" title="Log in">
           <LogIn size={18} />
         </Button>
       </form>
@@ -147,6 +149,13 @@ const Popup = () => {
         <p className="text-[#ff4646]">
           {err instanceof Error ? err.message : 'Unexpected error occured'}
         </p>
+      )}
+
+      {(data?.status === 'noData' || !data?.store || !data.steamId) && (
+        <div className="text-[#7cb8e4] text-xs flex gap-1 items-center">
+          <AlertCircle size={14} />
+          <p>Use both login options for best results.</p>
+        </div>
       )}
 
       {data?.status === 'ok' && (
@@ -239,7 +248,7 @@ const Popup = () => {
 
         <p className="text-sm flex gap-1 items-center">
           <History size={16} />
-          <span>v2.0</span>
+          <span>v{packageJson.version}</span>
         </p>
 
         <a

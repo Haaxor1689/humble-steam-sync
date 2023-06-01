@@ -2,11 +2,11 @@ import browser from 'webextension-polyfill';
 import { z } from 'zod';
 import { notUndef } from '../utils';
 import { SuggestionSchema } from '../../edge/api/_db';
+import { uniq, uniqBy } from 'lodash-es';
 
 const apiUrl = import.meta.env.DEV
-  ? 'https://humble-steam-sync-ez1az9oj7-haaxor1689.vercel.app'
+  ? 'https://humble-steam-sync-aumzauz0u-haaxor1689.vercel.app'
   : 'https://humble-steam-sync.haaxor1689.dev';
-console.log(apiUrl);
 
 export type Message =
   | { action: 'suggestTag'; suggestion: SuggestionSchema }
@@ -14,13 +14,15 @@ export type Message =
   | { action: 'steamLogIn'; steamName: string }
   | { action: 'getTagMappings' };
 
+export type Item = [name: string, id: number];
+
 export type LocalData = {
   status: 'ok';
   cacheTime?: string;
-  library: string[];
-  wishlist: string[];
-  ignored: string[];
-  recommended: string[];
+  library: Item[];
+  wishlist: Item[];
+  ignored: Item[];
+  recommended: Item[];
   steamName?: string;
   steamId?: string;
   avatar?: string;
@@ -30,13 +32,13 @@ export type LocalData = {
 
 type AppList = { applist: { apps: { appid: number; name: string }[] } };
 
-const fetchUserLibrary = (steamName: string): Promise<string[]> =>
+const fetchUserLibrary = (steamName: string): Promise<Item[]> =>
   fetch(`${apiUrl}/api/${steamName}/library`).then(r => r.json());
 
 const getWishlistPages = async (
   steamId: string,
   page: number = 0
-): Promise<string[]> => {
+): Promise<Item[]> => {
   const response = await fetch(
     `https://store.steampowered.com/wishlist/profiles/${steamId}/wishlistdata/?p=${page}`
   );
@@ -47,7 +49,9 @@ const getWishlistPages = async (
 
   const next = await getWishlistPages(steamId, page + 1);
   return [
-    ...(Object.values(parsed) as { name: string }[]).map(v => v.name),
+    ...(Object.entries(parsed) as [string, { name: string }][]).map(
+      ([id, v]) => [v.name, Number(id)] as Item
+    ),
     ...next
   ];
 };
@@ -64,7 +68,11 @@ const UserData = z.object({
 
 const mapApps = (items: number[], apps: AppList) =>
   items
-    .map(g => apps.applist.apps.find(a => a.appid == g)?.name)
+    .map(g => {
+      const item = apps.applist.apps.find(a => a.appid == g);
+      if (!item) return undefined;
+      return [item.name, item.appid] as Item;
+    })
     .filter(notUndef);
 
 const fetchStoreData = async () => {
@@ -129,13 +137,16 @@ const getUserData = async () => {
   )
     return cache;
 
+  console.log(cache);
+
+  let mergedData = cache;
+
   try {
     console.log('Fetching store data');
     const storeData = await fetchStoreData();
 
     if (storeData.status === 'ok') {
-      await browser.storage.local.set(storeData);
-      return { ...cache, ...storeData };
+      mergedData = { ...mergedData, ...storeData };
     }
 
     if (cache.steamId) {
@@ -143,22 +154,19 @@ const getUserData = async () => {
       const library = await fetchUserLibrary(cache.steamId);
       const wishlist = await getWishlistPages(cache.steamId);
 
-      const ownedGames = {
-        status: 'ok',
-        library,
-        wishlist,
-        ignored: [],
-        recommended: [],
+      mergedData = {
+        ...mergedData,
+        library: uniqBy([...mergedData.library, ...library], v => v[1]),
+        wishlist: uniqBy([...mergedData.wishlist, ...wishlist], v => v[1]),
         cacheTime: new Date().toLocaleString()
-      } satisfies LocalData as LocalData;
-
-      if (ownedGames.status === 'ok') {
-        await browser.storage.local.set(storeData);
-        return { ...cache, ...ownedGames };
-      }
+      };
     }
 
-    return { status: 'noData' } as const;
+    if (storeData.status !== 'ok' && !cache.steamId)
+      return { status: 'noData' } as const;
+
+    await browser.storage.local.set(mergedData);
+    return mergedData;
   } catch (e) {
     console.error(e);
     throw new Error('Unexpected error ocurred.');

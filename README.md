@@ -18,6 +18,12 @@ There are 2 ways of using this extension:
 
 ## Changelog
 
+**v2.5:**
+
+- Tags that were found in your library/wishlist/ignore now link directly to steam store page of the game
+- Merge both store and steamId info when available
+- Properly update version number in About section
+
 **v2.4:**
 
 - Fixed wishlist for steam account login

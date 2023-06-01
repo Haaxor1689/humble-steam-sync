@@ -4,7 +4,7 @@ export const config = {
   runtime: 'edge'
 };
 
-type Item = { name: string };
+type Item = { appid: number; name: string };
 
 export default async function library(request: Request) {
   const steamId = await getSteamId(request);
@@ -14,7 +14,7 @@ export default async function library(request: Request) {
   )
     .then(r => r.json())
     .then((r: { response: { games: Item[] } }) =>
-      r.response.games.map(v => v.name)
+      r.response.games.map(v => [v.name, v.appid])
     );
 
   return new Response(JSON.stringify(response));
