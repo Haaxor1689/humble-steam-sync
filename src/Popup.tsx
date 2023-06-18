@@ -9,7 +9,9 @@ import {
   Bug,
   Github,
   History,
-  AlertCircle
+  AlertCircle,
+  Unlock,
+  AlertTriangle
 } from 'lucide-react';
 
 import {
@@ -24,18 +26,40 @@ import Spinner from './components/Spinner';
 
 import allTagsPreview from './all-tags-preview.png';
 import packageJson from '../package.json';
+import { host_permissions, matches } from '../permissions.json';
 
+// Permissions
+const allPermissions = [...host_permissions, ...matches];
+const permCount = (arr?: string[]) =>
+  new Set([...(arr ?? []).map(p => p.match(/https:\/\/(.+?)\//)?.[1])]).size;
+
+// Keys
+const PermissionsQuery = ['permissions'];
 const UserDataQuery = ['userData'];
 
 const Popup = () => {
   const queryClient = useQueryClient();
+
+  const permissions = useQuery(PermissionsQuery, () =>
+    browser.permissions.getAll()
+  );
+  console.log('permissions', permissions.data);
+
+  const grantPermissions = useMutation(
+    () => browser.permissions.request({ origins: allPermissions }),
+    { onSuccess: () => queryClient.invalidateQueries(PermissionsQuery) }
+  );
+
+  const hasAllPermissions =
+    permCount(permissions.data?.origins) === permCount(allPermissions);
 
   const { data, isFetching, error } = useQuery(
     UserDataQuery,
     async () =>
       (await browser.runtime.sendMessage({
         action: 'getUserData'
-      } satisfies Message)) as GetUserDataResponse
+      } satisfies Message)) as GetUserDataResponse,
+    { enabled: hasAllPermissions }
   );
   console.log('userData', data);
 
@@ -57,7 +81,7 @@ const Popup = () => {
 
   return (
     <>
-      {(isFetching || steamLogIn.isLoading) && (
+      {(isFetching || steamLogIn.isLoading || grantPermissions.isLoading) && (
         <div className="text-[var(--main-text-color)] flex justify-center absolute top-0 left-0 right-0 bottom-0 items-center backdrop-blur-sm">
           <Spinner />
         </div>
@@ -76,6 +100,23 @@ const Popup = () => {
           </Button>
         )}
       </div>
+
+      {/* Permissions check */}
+      {!hasAllPermissions && (
+        <div className="flex gap-2 items-center text-yellow-500">
+          <AlertTriangle size={48} />
+          <p className="text-center font-semibold">
+            Please, grant all required permissions to this extension, for it to
+            function properly
+          </p>
+          <Button
+            title="Grant permissions"
+            onClick={() => grantPermissions.mutateAsync()}
+          >
+            <Unlock size={18} />
+          </Button>
+        </div>
+      )}
 
       {/* Store login */}
       {data?.status === 'ok' && data.store ? (
@@ -124,7 +165,7 @@ const Popup = () => {
       >
         <div
           className={cls(
-            'w-[48px] aspect-square border border-dashed border-[var(--btn-outline)] bg-cover',
+            'w-[48px] aspect-square border border-dashed border-[var(--btn-outline)] bg-cover flex-shrink-0',
             { 'border-none': data?.status == 'ok' && !!data?.avatar }
           )}
           style={
@@ -136,7 +177,7 @@ const Popup = () => {
         <div className="flex flex-col flex-grow">
           <label htmlFor={steamNameField.props.id}>SteamId or CustomUrl:</label>
           <input
-            className="mt-1 text-lg text-[var(--main-text-color)] border-b border-[var(--btn-outline)] bg-transparent"
+            className="mt-1 text-lg text-[var(--main-text-color)] border-b border-[var(--btn-outline)] bg-transparent w-full"
             {...steamNameField.props}
           />
         </div>

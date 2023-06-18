@@ -6,7 +6,7 @@ import './global.css';
 import Popup from './Popup';
 
 export const queryClient = new QueryClient({
-  defaultOptions: { queries: { refetchOnWindowFocus: false } }
+  defaultOptions: { queries: { refetchOnWindowFocus: false, retry: 0 } }
 });
 
 createRoot(document.getElementById('root')!).render(

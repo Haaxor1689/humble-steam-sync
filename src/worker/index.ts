@@ -2,10 +2,10 @@ import browser from 'webextension-polyfill';
 import { z } from 'zod';
 import { notUndef } from '../utils';
 import { SuggestionSchema } from '../../edge/api/_db';
-import { uniq, uniqBy } from 'lodash-es';
+import { uniqBy } from 'lodash-es';
 
 const apiUrl = import.meta.env.DEV
-  ? 'https://humble-steam-sync-aumzauz0u-haaxor1689.vercel.app'
+  ? 'https://humble-steam-sync.haaxor1689.dev'
   : 'https://humble-steam-sync.haaxor1689.dev';
 
 export type Message =
@@ -126,7 +126,14 @@ const steamLogIn = async (rawName: string) => {
 };
 
 const getUserData = async () => {
-  const cache = (await browser.storage.local.get(null)) as LocalData;
+  const cache = {
+    status: 'ok',
+    library: [],
+    wishlist: [],
+    ignored: [],
+    recommended: [],
+    ...(await browser.storage.local.get(null))
+  } as LocalData;
 
   console.log('Cache:', cache);
 
@@ -137,10 +144,7 @@ const getUserData = async () => {
   )
     return cache;
 
-  console.log(cache);
-
   let mergedData = cache;
-
   try {
     console.log('Fetching store data');
     const storeData = await fetchStoreData();

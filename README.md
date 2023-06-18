@@ -18,6 +18,12 @@ There are 2 ways of using this extension:
 
 ## Changelog
 
+**v2.6:**
+
+- Added missing permissions warning
+- Fixed broken Firefox build
+- Fixed other Firefox inconsistencies
+
 **v2.5:**
 
 - Tags that were found in your library/wishlist/ignore now link directly to steam store page of the game

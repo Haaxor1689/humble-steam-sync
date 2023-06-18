@@ -21,6 +21,7 @@ body.humble-steam-sync {
   flex-direction: column;
 
   & #root {
+    max-width: 323px;
     position: relative;
     display: flex;
     flex-direction: column;
