@@ -11,7 +11,8 @@ import {
   History,
   AlertCircle,
   Unlock,
-  AlertTriangle
+  AlertTriangle,
+  Trash2
 } from 'lucide-react';
 
 import {
@@ -27,11 +28,17 @@ import Spinner from './components/Spinner';
 import allTagsPreview from './all-tags-preview.png';
 import packageJson from '../package.json';
 import { host_permissions, matches } from '../permissions.json';
+import { useMemo } from 'react';
 
 // Permissions
+const mapPerm = (arr?: string[]) => [
+  ...new Set([
+    ...(arr ?? [])
+      .map(p => p.match(/https:\/\/(.+?)\//)?.[1])
+      .filter((v): v is string => !!v)
+  ])
+];
 const allPermissions = [...host_permissions, ...matches];
-const permCount = (arr?: string[]) =>
-  new Set([...(arr ?? []).map(p => p.match(/https:\/\/(.+?)\//)?.[1])]).size;
 
 // Keys
 const PermissionsQuery = ['permissions'];
@@ -50,8 +57,13 @@ const Popup = () => {
     { onSuccess: () => queryClient.invalidateQueries(PermissionsQuery) }
   );
 
-  const hasAllPermissions =
-    permCount(permissions.data?.origins) === permCount(allPermissions);
+  const hasAllPermissions = useMemo(
+    () =>
+      mapPerm(allPermissions).every(p =>
+        mapPerm(permissions.data?.origins)?.find(o => o === p)
+      ),
+    [permissions.data]
+  );
 
   const { data, isFetching, error } = useQuery(
     UserDataQuery,
@@ -287,28 +299,41 @@ const Popup = () => {
           <h2 className="inline">About</h2>
         </summary>
 
-        <p className="text-sm flex gap-1 items-center">
-          <History size={16} />
-          <span>v{packageJson.version}</span>
-        </p>
+        <div className="flex flex-col gap-1 items-start">
+          <p className="text-sm flex gap-1 items-center">
+            <History size={16} />
+            <span>v{packageJson.version}</span>
+          </p>
 
-        <a
-          href="https://github.com/Haaxor1689/humble-steam-sync"
-          target="_blank"
-          className="text-[#7cb8e4] text-sm flex gap-1 items-center"
-        >
-          <Github size={16} />
-          <span>Homepage</span>
-        </a>
+          <a
+            href="https://github.com/Haaxor1689/humble-steam-sync"
+            target="_blank"
+            className="text-[#7cb8e4] text-sm flex gap-1 items-center"
+          >
+            <Github size={16} />
+            <span>Homepage</span>
+          </a>
 
-        <a
-          href="https://github.com/Haaxor1689/humble-steam-sync/issues/new"
-          target="_blank"
-          className="text-[#ff4646] text-sm flex gap-1 items-center"
-        >
-          <Bug size={16} />
-          <span>Report issues</span>
-        </a>
+          <a
+            href="https://github.com/Haaxor1689/humble-steam-sync/issues/new"
+            target="_blank"
+            className="text-yellow-500 text-sm flex gap-1 items-center"
+          >
+            <Bug size={16} />
+            <span>Report issues</span>
+          </a>
+
+          <button
+            className="text-[#ff4646] text-sm flex gap-1 items-center"
+            onClick={async () => {
+              await browser.storage.local.clear();
+              queryClient.invalidateQueries(UserDataQuery);
+            }}
+          >
+            <Trash2 size={16} />
+            <span>Reset ALL data</span>
+          </button>
+        </div>
       </details>
     </>
   );

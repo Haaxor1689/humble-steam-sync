@@ -14,21 +14,23 @@ export type Message =
   | { action: 'steamLogIn'; steamName: string }
   | { action: 'getTagMappings' };
 
-export type Item = [name: string, id: number];
+const Item = z.tuple([z.string(), z.number()]);
+export type Item = z.infer<typeof Item>;
 
-export type LocalData = {
-  status: 'ok';
-  cacheTime?: string;
-  library: Item[];
-  wishlist: Item[];
-  ignored: Item[];
-  recommended: Item[];
-  steamName?: string;
-  steamId?: string;
-  avatar?: string;
-  store?: boolean;
-  alwaysShowTag?: boolean;
-};
+const LocalData = z.object({
+  status: z.literal('ok').default('ok'),
+  cacheTime: z.string().nullish(),
+  library: z.array(Item).default([]),
+  wishlist: z.array(Item).default([]),
+  ignored: z.array(Item).default([]),
+  recommended: z.array(Item).default([]),
+  steamName: z.string().optional(),
+  steamId: z.string().optional(),
+  avatar: z.string().optional(),
+  store: z.boolean().optional(),
+  alwaysShowTag: z.boolean().optional()
+});
+export type LocalData = z.infer<typeof LocalData>;
 
 type AppList = { applist: { apps: { appid: number; name: string }[] } };
 
@@ -80,23 +82,27 @@ const fetchStoreData = async () => {
     `https://store.steampowered.com/dynamicstore/userdata/?cacheRefresh=${Math.random()}`
   )
     .then(r => r.json())
-    .then(UserData.parse);
+    .then(UserData.safeParse);
 
-  if (!userData.rgOwnedApps.length) return { status: 'noData' } as const;
+  if (!userData.success || !userData.data.rgOwnedApps.length)
+    return { status: 'noData' } as const;
 
   const apps = await fetch(
     'https://api.steampowered.com/ISteamApps/GetAppList/v2/'
   ).then(r => r.json());
 
-  return {
+  const parsed = LocalData.safeParse({
     status: 'ok',
-    wishlist: mapApps(userData.rgWishlist, apps),
-    library: mapApps(userData.rgOwnedApps, apps),
-    ignored: mapApps(userData.rgIgnoredApps, apps),
-    recommended: mapApps(userData.rgRecommendedApps, apps),
+    wishlist: mapApps(userData.data.rgWishlist, apps),
+    library: mapApps(userData.data.rgOwnedApps, apps),
+    ignored: mapApps(userData.data.rgIgnoredApps, apps),
+    recommended: mapApps(userData.data.rgRecommendedApps, apps),
     cacheTime: new Date().toLocaleString(),
     store: true
-  } satisfies LocalData as LocalData;
+  });
+
+  if (!parsed.success) return { status: 'noData' } as const;
+  return parsed.data;
 };
 
 const steamLogIn = async (rawName: string) => {
@@ -126,16 +132,12 @@ const steamLogIn = async (rawName: string) => {
 };
 
 const getUserData = async () => {
-  const cache = {
-    status: 'ok',
-    library: [],
-    wishlist: [],
-    ignored: [],
-    recommended: [],
-    ...(await browser.storage.local.get(null))
-  } as LocalData;
+  const rawCache = await browser.storage.local.get(null);
+  console.log('Cache:', rawCache);
 
-  console.log('Cache:', cache);
+  const parsed = LocalData.safeParse(rawCache);
+  const cache = parsed.success ? parsed.data : LocalData.parse({});
+  !parsed.success && console.error(parsed.error);
 
   // Check 1 hour cache time
   if (

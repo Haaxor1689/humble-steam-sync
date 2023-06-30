@@ -18,6 +18,11 @@ There are 2 ways of using this extension:
 
 ## Changelog
 
+**v2.7:**
+
+- Fixed permissions check to not handle extra permission from previous version as a warning
+- Improved cache handling so outdated cache from previous version won't break the extension
+
 **v2.6:**
 
 - Added missing permissions warning
