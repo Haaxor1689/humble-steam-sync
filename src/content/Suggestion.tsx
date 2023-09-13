@@ -17,7 +17,7 @@ const Suggestion = ({ close }: Props) => {
   );
 
   const steamName = useField('steam_name');
-  const humbleName = useField('steam_name');
+  const humbleName = useField('humble_name');
 
   return (
     <form
