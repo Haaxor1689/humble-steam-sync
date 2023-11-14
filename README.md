@@ -18,6 +18,15 @@ There are 2 ways of using this extension:
 
 ## Changelog
 
+**v2.9:**
+
+- Fixed humble site max-width being affected by this extension
+- Fixed suggestion form
+
+**v2.8:**
+
+- Fixed popup display issue in Chrome caused by new update
+
 **v2.7:**
 
 - Fixed permissions check to not handle extra permission from previous version as a warning

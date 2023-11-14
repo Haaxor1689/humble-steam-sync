@@ -16,46 +16,45 @@
   --btn-outline: rgb(93, 102, 118);
 }
 
-body.humble-steam-sync {
+html:has(#root) {
+  width: max-content;
+}
+
+#root {
+  max-width: 323px;
+  position: relative;
   display: flex;
   flex-direction: column;
-
-  & #root {
-    max-width: 323px;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    flex-grow: 1;
-    gap: 8px;
-    padding: 8px 12px;
-    margin: 0;
-    color: var(--main-text-color);
-    background: radial-gradient(
-        farthest-side at top right,
-        var(--gradient-right),
-        transparent 500px
-      ),
-      radial-gradient(
-        farthest-corner at top left,
-        var(--gradient-left),
-        transparent 600px
-      ),
-      radial-gradient(
-        farthest-corner at bottom right,
-        var(--gradient-background-right),
-        transparent 500px
-      ),
-      radial-gradient(
-        farthest-corner at bottom left,
-        var(--gradient-background-left),
-        transparent 600px
-      );
-    background-color: var(--gradient-background);
-    font-size: 0.7rem;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    line-height: 1.4;
-  }
+  min-height: 0;
+  flex-grow: 1;
+  gap: 8px;
+  padding: 8px 12px;
+  margin: 0;
+  color: var(--main-text-color);
+  background: radial-gradient(
+      farthest-side at top right,
+      var(--gradient-right),
+      transparent 500px
+    ),
+    radial-gradient(
+      farthest-corner at top left,
+      var(--gradient-left),
+      transparent 600px
+    ),
+    radial-gradient(
+      farthest-corner at bottom right,
+      var(--gradient-background-right),
+      transparent 500px
+    ),
+    radial-gradient(
+      farthest-corner at bottom left,
+      var(--gradient-background-left),
+      transparent 600px
+    );
+  background-color: var(--gradient-background);
+  font-size: 0.7rem;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.4;
 }
 
 .hss-button {
