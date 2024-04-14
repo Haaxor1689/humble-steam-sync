@@ -6,13 +6,15 @@ import './global.css';
 import Popup from './Popup';
 
 export const queryClient = new QueryClient({
-  defaultOptions: { queries: { refetchOnWindowFocus: false, retry: 0 } }
+	defaultOptions: { queries: { refetchOnWindowFocus: false, retry: 0 } }
 });
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <Popup />
-    </QueryClientProvider>
-  </StrictMode>
+const rootElem = document.getElementById('root');
+if (!rootElem) throw new Error('Root element not found');
+createRoot(rootElem).render(
+	<StrictMode>
+		<QueryClientProvider client={queryClient}>
+			<Popup />
+		</QueryClientProvider>
+	</StrictMode>
 );

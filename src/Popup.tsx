@@ -2,41 +2,52 @@ import browser from 'webextension-polyfill';
 import cls from 'classnames';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  LogOut,
-  LogIn,
-  RefreshCcw,
-  Check,
-  Bug,
-  Github,
-  History,
-  AlertCircle,
-  Unlock,
-  AlertTriangle,
-  Trash2
+	LogOut,
+	LogIn,
+	RefreshCcw,
+	Check,
+	Bug,
+	Github,
+	History,
+	AlertCircle,
+	Unlock,
+	AlertTriangle,
+	Trash2
 } from 'lucide-react';
+import { useMemo } from 'react';
 
-import {
-  GetUserDataResponse,
-  SteamLogInResponse,
-  type Message,
-  LocalData
-} from './worker';
+import packageJson from '../package.json';
+import { host_permissions, matches } from '../permissions.json';
+
 import useField from './utils/useField';
 import Button from './components/Button';
 import Spinner from './components/Spinner';
-
 import allTagsPreview from './all-tags-preview.png';
-import packageJson from '../package.json';
-import { host_permissions, matches } from '../permissions.json';
-import { useMemo } from 'react';
+import { clearCache, sendWorkerMessage, setCache } from './worker/helpers';
+import Input from './components/Input';
+
+const toLastUpdated = (updatedAt?: string | null) => {
+	const updatedTime = new Date(updatedAt ?? '').getTime();
+	if (isNaN(updatedTime)) return 'Never';
+
+	const diff = new Date().getTime() - updatedTime;
+	const minutes = Math.floor(diff / 1000 / 60);
+	const hours = Math.floor(minutes / 60);
+	const days = Math.floor(hours / 24);
+
+	if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
+	if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+	if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+	return 'Just now';
+};
 
 // Permissions
 const mapPerm = (arr?: string[]) => [
-  ...new Set([
-    ...(arr ?? [])
-      .map(p => p.match(/https:\/\/(.+?)\//)?.[1])
-      .filter((v): v is string => !!v)
-  ])
+	...new Set([
+		...(arr ?? [])
+			.map(p => p.match(/https:\/\/(.+?)\//)?.[1])
+			.filter((v): v is string => !!v)
+	])
 ];
 const allPermissions = [...host_permissions, ...matches];
 
@@ -45,297 +56,306 @@ const PermissionsQuery = ['permissions'];
 const UserDataQuery = ['userData'];
 
 const Popup = () => {
-  const queryClient = useQueryClient();
+	const queryClient = useQueryClient();
 
-  const permissions = useQuery(PermissionsQuery, () =>
-    browser.permissions.getAll()
-  );
-  console.log('permissions', permissions.data);
+	const permissions = useQuery(PermissionsQuery, () =>
+		browser.permissions.getAll()
+	);
 
-  const grantPermissions = useMutation(
-    () => browser.permissions.request({ origins: allPermissions }),
-    { onSuccess: () => queryClient.invalidateQueries(PermissionsQuery) }
-  );
+	const grantPermissions = useMutation(
+		() => browser.permissions.request({ origins: allPermissions }),
+		{ onSuccess: () => queryClient.invalidateQueries(PermissionsQuery) }
+	);
 
-  const hasAllPermissions = useMemo(
-    () =>
-      mapPerm(allPermissions).every(p =>
-        mapPerm(permissions.data?.origins)?.find(o => o === p)
-      ),
-    [permissions.data]
-  );
+	const hasAllPermissions = useMemo(
+		() =>
+			mapPerm(allPermissions).every(p =>
+				mapPerm(permissions.data?.origins)?.find(o => o === p)
+			),
+		[permissions.data]
+	);
 
-  const { data, isFetching, error } = useQuery(
-    UserDataQuery,
-    async () =>
-      (await browser.runtime.sendMessage({
-        action: 'getUserData'
-      } satisfies Message)) as GetUserDataResponse,
-    { enabled: hasAllPermissions }
-  );
-  console.log('userData', data);
+	const userData = useQuery(
+		UserDataQuery,
+		() => sendWorkerMessage('getUserData'),
+		{ enabled: hasAllPermissions }
+	);
+	console.log('[HSS] userData:', userData.data);
 
-  const steamNameField = useField(
-    'steamName',
-    data?.status === 'ok' ? data.steamName : undefined
-  );
+	const steamNameField = useField(
+		'steamName',
+		userData.data?.status === 'ok' ? userData.data.steamName : undefined
+	);
 
-  const steamLogIn = useMutation(
-    async (steamName: string) =>
-      (await browser.runtime.sendMessage({
-        action: 'steamLogIn',
-        steamName
-      } satisfies Message)) as SteamLogInResponse,
-    { onSuccess: () => queryClient.invalidateQueries(UserDataQuery) }
-  );
+	const steamLogIn = useMutation(
+		(rawName: string) => sendWorkerMessage('steamLogIn', rawName),
+		{ onSuccess: () => queryClient.invalidateQueries(UserDataQuery) }
+	);
 
-  const err = error ?? steamLogIn.error;
+	const err = userData.error ?? steamLogIn.error;
 
-  return (
-    <>
-      {(isFetching || steamLogIn.isLoading || grantPermissions.isLoading) && (
-        <div className="text-[var(--main-text-color)] flex justify-center absolute top-0 left-0 right-0 bottom-0 items-center backdrop-blur-sm">
-          <Spinner />
-        </div>
-      )}
-      <div className="flex justify-between items-center gap-2">
-        <h1 className="text-2xl">Settings</h1>
-        {data?.status === 'ok' && (
-          <Button
-            onClick={() => {
-              browser.storage.local.clear();
-              queryClient.invalidateQueries(UserDataQuery);
-            }}
-            title="SignOut"
-          >
-            <LogOut />
-          </Button>
-        )}
-      </div>
+	return (
+		<>
+			{(userData.isFetching ||
+				steamLogIn.isLoading ||
+				grantPermissions.isLoading) && (
+				<div className="text-light absolute bottom-0 left-0 right-0 top-0 flex items-center justify-center backdrop-blur-sm">
+					<Spinner />
+				</div>
+			)}
+			<div className="flex items-center justify-between gap-2">
+				<h1 className="text-2xl">Settings</h1>
+				{userData.data?.status === 'ok' && (
+					<Button
+						onClick={async () => {
+							await clearCache();
+							await queryClient.invalidateQueries(UserDataQuery);
+						}}
+						title="SignOut"
+					>
+						<LogOut />
+					</Button>
+				)}
+			</div>
 
-      {/* Permissions check */}
-      {!hasAllPermissions && (
-        <div className="flex gap-2 items-center text-yellow-500">
-          <AlertTriangle size={48} />
-          <p className="text-center font-semibold">
-            Please, grant all required permissions to this extension, for it to
-            function properly
-          </p>
-          <Button
-            title="Grant permissions"
-            onClick={() => grantPermissions.mutateAsync()}
-          >
-            <Unlock size={18} />
-          </Button>
-        </div>
-      )}
+			{/* Permissions check */}
+			{!hasAllPermissions && (
+				<div className="text-yellow-500 flex items-center gap-2">
+					<AlertTriangle size={48} />
+					<p className="text-center font-semibold">
+						Please, grant all required permissions to this extension, for it to
+						function properly
+					</p>
+					<Button
+						title="Grant permissions"
+						onClick={() => grantPermissions.mutateAsync()}
+					>
+						<Unlock size={18} />
+					</Button>
+				</div>
+			)}
 
-      {/* Store login */}
-      {data?.status === 'ok' && data.store ? (
-        <div className="flex items-center gap-2 whitespace-nowrap">
-          <Check />
-          <p className="flex-grow">
-            Logged in through{' '}
-            <a
-              href="https://store.steampowered.com/"
-              target="_blank"
-              className="underline"
-            >
-              store.steampowered.com
-            </a>
-          </p>
-        </div>
-      ) : (
-        <div className="flex items-center gap-2">
-          <p className="flex-grow whitespace-nowrap">
-            Check{' '}
-            <a
-              href="https://store.steampowered.com/"
-              target="_blank"
-              className="underline"
-            >
-              store.steampowered.com
-            </a>{' '}
-            login:
-          </p>
-          <Button
-            onClick={() => queryClient.invalidateQueries(UserDataQuery)}
-            title="Retry"
-          >
-            <RefreshCcw size={18} />
-          </Button>
-        </div>
-      )}
+			{/* Store login */}
+			{userData.data?.status === 'ok' && userData.data.store ? (
+				<div className="flex items-center gap-2 whitespace-nowrap">
+					<Check />
+					<p className="flex-grow">
+						Logged in through{' '}
+						<a
+							href="https://store.steampowered.com/"
+							target="_blank"
+							className="underline"
+							rel="noreferrer"
+						>
+							store.steampowered.com
+						</a>
+					</p>
+				</div>
+			) : (
+				<div className="flex items-center gap-2">
+					<p className="flex-grow whitespace-nowrap">
+						Check{' '}
+						<a
+							href="https://store.steampowered.com/"
+							target="_blank"
+							className="underline"
+							rel="noreferrer"
+						>
+							store.steampowered.com
+						</a>{' '}
+						login:
+					</p>
+					<Button
+						onClick={() => queryClient.invalidateQueries(UserDataQuery)}
+						title="Retry"
+					>
+						<RefreshCcw size={18} />
+					</Button>
+				</div>
+			)}
 
-      {/* Steam api login */}
-      <form
-        className="flex items-end gap-2"
-        onSubmit={async e => {
-          e.preventDefault();
-          await steamLogIn.mutateAsync(steamNameField.props.value);
-        }}
-      >
-        <div
-          className={cls(
-            'w-[48px] aspect-square border border-dashed border-[var(--btn-outline)] bg-cover flex-shrink-0',
-            { 'border-none': data?.status == 'ok' && !!data?.avatar }
-          )}
-          style={
-            data?.status == 'ok' && data?.avatar
-              ? { backgroundImage: `url(${data?.avatar})` }
-              : undefined
-          }
-        />
-        <div className="flex flex-col flex-grow">
-          <label htmlFor={steamNameField.props.id}>SteamId or CustomUrl:</label>
-          <input
-            className="mt-1 text-lg text-[var(--main-text-color)] border-b border-[var(--btn-outline)] bg-transparent w-full"
-            {...steamNameField.props}
-          />
-        </div>
-        <Button type="submit" title="Log in">
-          <LogIn size={18} />
-        </Button>
-      </form>
+			{/* Steam api login */}
+			<form
+				className="flex items-end gap-2"
+				onSubmit={async e => {
+					e.preventDefault();
+					await steamLogIn.mutateAsync(steamNameField.props.value);
+				}}
+			>
+				<div
+					className={cls(
+						'aspect-square w-[48px] flex-shrink-0 border border-dashed border-[var(--btn-outline)] bg-cover',
+						{
+							'border-none':
+								userData.data?.status === 'ok' && !!userData.data?.avatar
+						}
+					)}
+					style={
+						userData.data?.status === 'ok' && userData.data?.avatar
+							? { backgroundImage: `url(${userData.data?.avatar})` }
+							: undefined
+					}
+				/>
+				<div className="flex flex-grow flex-col gap-1">
+					<label htmlFor={steamNameField.props.id}>SteamId or CustomUrl:</label>
+					<Input {...steamNameField.props} className="!p-0 text-lg" />
+				</div>
+				<Button type="submit" title="Log in">
+					<LogIn size={18} />
+				</Button>
+			</form>
 
-      {err && (
-        <p className="text-[#ff4646]">
-          {err instanceof Error ? err.message : 'Unexpected error occured'}
-        </p>
-      )}
+			{err && (
+				<p className="text-error">
+					{err instanceof Error ? err.message : 'Unexpected error occurred'}
+				</p>
+			)}
 
-      {(data?.status === 'noData' || !data?.store || !data.steamId) && (
-        <div className="text-[#7cb8e4] text-xs flex gap-1 items-center">
-          <AlertCircle size={14} />
-          <p>Use both login options for best results.</p>
-        </div>
-      )}
+			{(userData.data?.status === 'noData' ||
+				!userData.data?.store ||
+				!userData.data.steamId) && (
+				<div className="flex items-center gap-1 text-xs text-primary">
+					<AlertCircle size={14} />
+					<p>Use both login options for best results.</p>
+				</div>
+			)}
 
-      {data?.status === 'ok' && (
-        <details>
-          <summary className="text-lg cursor-pointer">
-            <h2 className="inline">Options</h2>
-          </summary>
+			{userData.data?.status === 'ok' && (
+				<details>
+					<summary className="cursor-pointer text-lg">
+						<h2 className="inline">Options</h2>
+					</summary>
 
-          <div className="flex gap-2 mt-2">
-            <img src={allTagsPreview} className="aspect-auto w-1/3" />
-            <div className="flex flex-col gap-2 items-start">
-              <label htmlFor="alwaysShowTag" className="">
-                Always show a tag with link to Steam store next to all items on
-                HumbleBundle pages?
-              </label>
+					<div className="mt-2 flex gap-2">
+						<img
+							src={allTagsPreview}
+							className="aspect-auto w-1/3"
+							alt="Preview of how steam link tag looks like"
+						/>
+						<div className="flex flex-col items-start gap-2">
+							<label htmlFor="alwaysShowTag" className="">
+								Always show a tag with link to Steam store next to all items on
+								HumbleBundle pages?
+							</label>
 
-              <Button
-                type="submit"
-                title={data.alwaysShowTag ? 'Show' : "Don't show"}
-                onClick={async () => {
-                  await browser.storage.local.set({
-                    alwaysShowTag: !data.alwaysShowTag
-                  } satisfies Partial<LocalData>);
-                  queryClient.invalidateQueries(UserDataQuery);
-                }}
-              >
-                {data.alwaysShowTag ? 'Always show' : "Don't show"}
-                <img src="https://store.cloudflare.steamstatic.com/public/images/v6/icon_platform_linux.png" />
-              </Button>
-            </div>
-          </div>
-        </details>
-      )}
+							<Button
+								type="submit"
+								title={userData.data.alwaysShowTag ? 'Show' : "Don't show"}
+								onClick={async () => {
+									await setCache({
+										alwaysShowTag: !userData.data?.alwaysShowTag
+									});
+									await queryClient.invalidateQueries(UserDataQuery);
+								}}
+							>
+								{userData.data.alwaysShowTag ? 'Always show' : "Don't show"}
+								<img
+									src="https://store.cloudflare.steamstatic.com/public/images/v6/icon_platform_linux.png"
+									alt="Steam logo"
+								/>
+							</Button>
+						</div>
+					</div>
+				</details>
+			)}
 
-      {data?.status !== 'ok' && (
-        <details>
-          <summary className="text-lg cursor-pointer">
-            <h2 className="inline">Instructions</h2>
-          </summary>
-          <p>
-            You can get your SteamId or CustomUrl from your steam community
-            profile page url:
-          </p>
-          <ul className="list-disc list-inside">
-            <li className="whitespace-nowrap">
-              https://steamcommunity.com/profiles/
-              <span className="font-bold">SteamId</span>/
-            </li>
-            <li className="whitespace-nowrap">
-              https://steamcommunity.com/id/
-              <span className="font-bold">CustomUrl</span>/
-            </li>
-          </ul>
-        </details>
-      )}
+			{userData.data?.status !== 'ok' && (
+				<details>
+					<summary className="cursor-pointer text-lg">
+						<h2 className="inline">Instructions</h2>
+					</summary>
+					<p>
+						You can get your SteamId or CustomUrl from your steam community
+						profile page url:
+					</p>
+					<ul className="list-inside list-disc">
+						<li className="whitespace-nowrap">
+							https://steamcommunity.com/profiles/
+							<span className="font-bold">SteamId</span>/
+						</li>
+						<li className="whitespace-nowrap">
+							https://steamcommunity.com/id/
+							<span className="font-bold">CustomUrl</span>/
+						</li>
+					</ul>
+				</details>
+			)}
 
-      {data?.status === 'ok' && (
-        <details>
-          <summary className="text-lg cursor-pointer">
-            <h2 className="inline">Saved data</h2>
-          </summary>
-          <div className="grid grid-cols-2">
-            <div>Last updated at:</div>
-            <div>{data.cacheTime}</div>
-            <div>Library items:</div>
-            <div>{data.library.length}</div>
-            <div>Wishlisted items:</div>
-            <div>{data.wishlist.length}</div>
-            <div>Ignored items:</div>
-            <div>{data.ignored.length}</div>
-            <div>Recommended items:</div>
-            <div>{data.recommended.length}</div>
-          </div>
-          <Button
-            className="mt-2"
-            onClick={async () => {
-              await browser.storage.local.set({ cacheTime: null });
-              queryClient.invalidateQueries(UserDataQuery);
-            }}
-          >
-            <RefreshCcw size={16} /> Refresh
-          </Button>
-        </details>
-      )}
+			{userData.data?.status === 'ok' && (
+				<details>
+					<summary className="cursor-pointer text-lg">
+						<h2 className="inline">Saved data</h2>
+					</summary>
+					<div className="grid grid-cols-[auto_1fr] gap-x-2">
+						<div>Last updated at:</div>
+						<div className="text-white">
+							{toLastUpdated(userData.data.cacheTime)}
+						</div>
+						<div>Library items:</div>
+						<div className="text-white">{userData.data.library.length}</div>
+						<div>Wishlisted items:</div>
+						<div className="text-white">{userData.data.wishlist.length}</div>
+						<div>Ignored items:</div>
+						<div className="text-white">{userData.data.ignored.length}</div>
+						<div>Recommended items:</div>
+						<div className="text-white">{userData.data.recommended.length}</div>
+					</div>
+					<Button
+						className="mt-2"
+						onClick={async () => {
+							await setCache({ cacheTime: null });
+							queryClient.invalidateQueries(UserDataQuery);
+						}}
+					>
+						<RefreshCcw size={16} /> Refresh
+					</Button>
+				</details>
+			)}
 
-      <details>
-        <summary className="text-lg cursor-pointer">
-          <h2 className="inline">About</h2>
-        </summary>
+			<details>
+				<summary className="cursor-pointer text-lg">
+					<h2 className="inline">About</h2>
+				</summary>
 
-        <div className="flex flex-col gap-1 items-start">
-          <p className="text-sm flex gap-1 items-center">
-            <History size={16} />
-            <span>v{packageJson.version}</span>
-          </p>
+				<div className="flex flex-col items-start gap-1">
+					<p className="flex items-center gap-1 text-sm text-white/50">
+						<History size={16} />
+						<span>v{packageJson.version}</span>
+					</p>
 
-          <a
-            href="https://github.com/Haaxor1689/humble-steam-sync"
-            target="_blank"
-            className="text-[#7cb8e4] text-sm flex gap-1 items-center"
-          >
-            <Github size={16} />
-            <span>Homepage</span>
-          </a>
+					<a
+						href="https://github.com/Haaxor1689/humble-steam-sync"
+						target="_blank"
+						className="flex items-center gap-1 text-sm"
+						rel="noreferrer"
+					>
+						<Github size={16} />
+						<span>Homepage</span>
+					</a>
 
-          <a
-            href="https://github.com/Haaxor1689/humble-steam-sync/issues/new"
-            target="_blank"
-            className="text-yellow-500 text-sm flex gap-1 items-center"
-          >
-            <Bug size={16} />
-            <span>Report issues</span>
-          </a>
+					<a
+						href="https://github.com/Haaxor1689/humble-steam-sync/issues/new"
+						target="_blank"
+						className="flex items-center gap-1 text-sm text-primary"
+						rel="noreferrer"
+					>
+						<Bug size={16} />
+						<span>Report issues</span>
+					</a>
 
-          <button
-            className="text-[#ff4646] text-sm flex gap-1 items-center"
-            onClick={async () => {
-              await browser.storage.local.clear();
-              queryClient.invalidateQueries(UserDataQuery);
-            }}
-          >
-            <Trash2 size={16} />
-            <span>Reset ALL data</span>
-          </button>
-        </div>
-      </details>
-    </>
-  );
+					<button
+						className="flex items-center gap-1 text-sm text-error"
+						onClick={async () => {
+							await clearCache();
+							await queryClient.invalidateQueries(UserDataQuery);
+						}}
+					>
+						<Trash2 size={16} />
+						<span>Reset ALL data</span>
+					</button>
+				</div>
+			</details>
+		</>
+	);
 };
 export default Popup;

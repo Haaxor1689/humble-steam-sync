@@ -1,6 +1,6 @@
 # Steam tags for Humble Bundle
 
-This repository contains full source code of the `Steam tags for Humble Bundle` extension for Google Chrome and Mozilla Fiferox, together with backend code handling communication with Steamworks Web API.
+This repository contains the full source code of the `Steam tags for Humble Bundle` extension for Google Chrome and Mozilla Fiferox, together with backend code handling communication with the Steamworks Web API.
 
 ## Download
 
@@ -17,6 +17,12 @@ There are 2 ways of using this extension:
 - Enter your SteamId or CustomUrl in the extension settings
 
 ## Changelog
+
+**v3.0:**
+
+- The website will remain responsive while the tags are loading
+- Improved logging and error handling
+- Switched to a new database
 
 **v2.9:**
 

@@ -1,23 +1,21 @@
-import db from '../_db';
+import { db } from '../db/_db';
 
 export const config = {
-  runtime: 'edge'
+	runtime: 'edge'
 };
 
-export default async function profile() {
-  try {
-    const suggestions = await db.execute(
-      'SELECT steam_name, humble_name FROM suggestions WHERE approved = true',
-      [],
-      { as: 'object' }
-    );
-    return new Response(JSON.stringify(suggestions.rows));
-  } catch (e) {
-    return new Response(
-      JSON.stringify({
-        message: e instanceof Error ? e.message : 'Unexpected error ocurred'
-      }),
-      { status: 500 }
-    );
-  }
+export default async function list() {
+	try {
+		const suggestions = await db.query.suggestions.findMany({
+			columns: { approved: false }
+		});
+		return new Response(JSON.stringify(suggestions));
+	} catch (e) {
+		return new Response(
+			JSON.stringify({
+				message: e instanceof Error ? e.message : 'Unexpected error ocurred'
+			}),
+			{ status: 500 }
+		);
+	}
 }
