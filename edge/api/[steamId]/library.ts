@@ -1,4 +1,4 @@
-import { getSteamId } from '../_helpers';
+import { getSteamId, handler } from '../../helpers';
 
 export const config = {
 	runtime: 'edge'
@@ -6,7 +6,7 @@ export const config = {
 
 type Item = { appid: number; name: string };
 
-export default async function library(request: Request) {
+export default handler(async request => {
 	const steamId = await getSteamId(request);
 
 	const response = await fetch(
@@ -18,4 +18,4 @@ export default async function library(request: Request) {
 		);
 
 	return new Response(JSON.stringify(response));
-}
+});

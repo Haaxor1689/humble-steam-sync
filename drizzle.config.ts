@@ -5,7 +5,7 @@ if (!process.env.DATABASE_URL || !process.env.DATABASE_AUTH_TOKEN) {
 }
 
 export default {
-	schema: './edge/api/db/_schema.ts',
+	schema: './edge/db/schema.ts',
 	driver: 'turso',
 	dbCredentials: {
 		url: process.env.DATABASE_URL,

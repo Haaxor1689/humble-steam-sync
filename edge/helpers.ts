@@ -12,3 +12,18 @@ export const getSteamId = async (request: Request) => {
 	console.log('getSteamId', response);
 	return response.response.steamid ?? steamId;
 };
+
+export const handler =
+	(callback: (req: Request) => Promise<Response>) => (req: Request) => {
+		try {
+			return callback(req);
+		} catch (e) {
+			return new Response(
+				JSON.stringify({
+					status: 'error',
+					message: e instanceof Error ? e.message : 'Unexpected error'
+				}),
+				{ status: 500 }
+			);
+		}
+	};

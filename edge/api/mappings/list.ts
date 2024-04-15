@@ -1,21 +1,13 @@
-import { db } from '../db/_db';
+import { db } from '../../db/';
+import { handler } from '../../helpers';
 
 export const config = {
 	runtime: 'edge'
 };
 
-export default async function list() {
-	try {
-		const suggestions = await db.query.suggestions.findMany({
-			columns: { approved: false }
-		});
-		return new Response(JSON.stringify(suggestions));
-	} catch (e) {
-		return new Response(
-			JSON.stringify({
-				message: e instanceof Error ? e.message : 'Unexpected error ocurred'
-			}),
-			{ status: 500 }
-		);
-	}
-}
+export default handler(async () => {
+	const suggestions = await db.query.suggestions.findMany({
+		columns: { approved: false }
+	});
+	return new Response(JSON.stringify(suggestions));
+});

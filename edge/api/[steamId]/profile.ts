@@ -1,10 +1,10 @@
-import { getSteamId } from '../_helpers';
+import { getSteamId, handler } from '../../helpers';
 
 export const config = {
 	runtime: 'edge'
 };
 
-export default async function profile(request: Request) {
+export default handler(async request => {
 	const steamId = await getSteamId(request);
 
 	const response = await fetch(
@@ -19,4 +19,4 @@ export default async function profile(request: Request) {
 	return new Response(
 		JSON.stringify({ steamId, avatar: json.response.players[0].avatarmedium })
 	);
-}
+});
