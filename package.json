@@ -25,13 +25,13 @@
 		"vite": "^4.5.0"
 	},
 	"devDependencies": {
-		"@crxjs/vite-plugin": "2.0.0-beta.21",
+		"@crxjs/vite-plugin": "2.0.0-beta.28",
 		"@haaxor1689/eslint-config": "^3.0.0",
 		"@haaxor1689/prettier-config": "^3.0.0",
 		"@libsql/client": "^0.6.0",
 		"@tailwindcss/nesting": "0.0.0-insiders.565cd3e",
 		"@types/chrome": "^0.0.222",
-		"@types/eslint": "^8.56.7",
+		"@types/eslint": "^8.56.9",
 		"@types/fs-extra": "^11.0.4",
 		"@types/lodash-es": "^4.17.11",
 		"@types/node": "^20.9.0",
