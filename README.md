@@ -18,6 +18,10 @@ There are 2 ways of using this extension:
 
 ## Changelog
 
+**v3.1:**
+
+- Updated dependencies to fix new Chrome extension policy issue
+
 **v3.0:**
 
 - The website will remain responsive while the tags are loading
