@@ -14,8 +14,6 @@ export default handler(async request => {
 	if (!response.ok) return new Response(JSON.stringify('null'));
 	const json = await response.json();
 
-	console.log('getUserProfile', json);
-
 	return new Response(
 		JSON.stringify({ steamId, avatar: json.response.players[0].avatarmedium })
 	);
