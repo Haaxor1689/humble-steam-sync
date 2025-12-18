@@ -15,12 +15,17 @@ type GetAppListResponse = {
 export default handler(async request => {
 	const data = (await request.json()) as number[];
 
+	console.log(`Fetching names for ${data.length} apps.`);
 	const cached = await db.query.apps.findMany({
 		where: (app, { inArray }) => inArray(app.app_id, data)
 	});
 
+	console.log(`Found ${cached.length} cached apps.`);
+
 	const entries = cached.map(v => [v.app_id, v.name] as [number, string]);
 	const missing = data.filter(id => !cached.find(c => c.app_id === id));
+
+	console.log(`Fetching ${missing.length} missing apps from Steam API.`);
 
 	await Promise.allSettled(
 		missing.map(async id => {
