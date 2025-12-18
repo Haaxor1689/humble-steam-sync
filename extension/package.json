@@ -1,0 +1,42 @@
+{
+	"name": "@humble-steam-sync/extension",
+	"version": "3.2",
+	"description": "Show your library and wishlist games from Steam on Humble Bundle pages.",
+	"author": "Haaxor1689",
+	"license": "MIT",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"preview": "vite preview",
+		"build": "vite build && node post-build.js"
+	},
+	"dependencies": {
+		"@tanstack/react-query": "4.36.1",
+		"classnames": "2.5.1",
+		"es-toolkit": "1.41.0",
+		"lucide-react": "0.562.0",
+		"react": "19.2.3",
+		"react-dom": "19.2.3",
+		"zod": "catalog:"
+	},
+	"devDependencies": {
+		"@crxjs/vite-plugin": "2.3.0",
+		"@types/chrome": "^0.0.222",
+		"@types/node": "^24.0.15",
+		"@types/react": "^19.2.3",
+		"@types/react-dom": "^19.2.3",
+		"@types/webextension-polyfill": "^0.10.6",
+		"@vitejs/plugin-react": "^4.7.0",
+		"archiver": "^5.3.2",
+		"fs-extra": "^11.1.1",
+		"@types/fs-extra": "^11.0.4",
+		"vite": "^7.0.5",
+		"vite-plugin-zip-pack": "^1.2.4",
+		"webextension-polyfill": "^0.10.0",
+		"eslint": "catalog:",
+		"tailwindcss": "4.1.17",
+		"@tailwindcss/vite": "^4.1.18",
+		"typescript": "catalog:"
+	}
+}
