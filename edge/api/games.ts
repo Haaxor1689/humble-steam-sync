@@ -18,7 +18,7 @@ export default handler(async request => {
 	let lastId = data[0] - 1;
 	do {
 		const r = await fetch(
-			`https://api.steampowered.com/IStoreService/GetAppList/v1/?key=${process.env.STEAM_API_KEY}&format=json&last_appid=${lastId}`
+			`https://api.steampowered.com/IStoreService/GetAppList/v1/?key=${process.env.STEAM_API_KEY}&format=json&last_appid=${lastId}&max_results=50000`
 		)
 			.then(r => r.json())
 			.then(r => r.response as GetAppListResponse);
