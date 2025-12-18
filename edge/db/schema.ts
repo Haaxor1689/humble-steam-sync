@@ -11,3 +11,8 @@ export const suggestions = sqliteTable('suggestions', {
 		.default(0 as never)
 		.notNull()
 });
+
+export const apps = sqliteTable('apps', {
+	app_id: integer('app_id').primaryKey(),
+	name: text('name', { length: 255 }).notNull()
+});
