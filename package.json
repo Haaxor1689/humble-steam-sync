@@ -2,10 +2,9 @@
 	"name": "humble-steam-sync",
 	"private": true,
 	"scripts": {
-		"dev:extension": "cd extension && bun run dev",
-		"preview:extension": "cd extension && bun run preview",
-		"build:extension": "cd extension && bun run build",
-		"dev:server": "cd server && bun run dev"
+		"dev:api": "cd server && bun run dev",
+		"dev:ext": "cd extension && bun run dev",
+		"build:ext": "cd extension && bun run build"
 	},
 	"devDependencies": {
 		"prettier": "^3.7.4",

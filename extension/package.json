@@ -12,7 +12,6 @@
 		"build": "vite build && node post-build.js"
 	},
 	"dependencies": {
-		"@tanstack/react-query": "4.36.1",
 		"classnames": "2.5.1",
 		"es-toolkit": "1.41.0",
 		"lucide-react": "0.562.0",

@@ -14,5 +14,5 @@ export const suggestions = sqliteTable('suggestions', {
 
 export const apps = sqliteTable('apps', {
 	app_id: integer('app_id').primaryKey(),
-	name: text('name', { length: 255 }).notNull()
+	name: text('name', { length: 255 })
 });

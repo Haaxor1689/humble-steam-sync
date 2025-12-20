@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
 import cls from 'classnames';
 import { FileWarning, UserCheck, UserX, XOctagon } from 'lucide-react';
 
@@ -7,8 +6,10 @@ import Suggestion from './Suggestion';
 
 import DialogButton from '@/components/DialogButton';
 import Spinner from '@/components/Spinner';
+import useApi from '@/utils/useApi';
+import useStorage from '@/utils/useStorage';
 import { type ApiMethodsReturn } from '@/worker';
-import { sendWorkerMessage } from '@/worker/helpers';
+import { Storage } from '@/worker/helpers';
 import { type Item } from '@/worker/schemas';
 
 const getRawName = (item: HTMLElement) =>
@@ -68,8 +69,6 @@ const insertTag = async (
 	cache: Awaited<ApiMethodsReturn<'getUserData'>>,
 	mappings: Awaited<ApiMethodsReturn<'getTagMappings'>>
 ) => {
-	if (cache?.status !== 'ok') throw new Error('Data not ready');
-
 	// Free up the main thread
 	await new Promise(r => setTimeout(r, 0));
 
@@ -99,7 +98,7 @@ const insertTag = async (
 		return [item, message];
 	}, undefined);
 
-	if (!cache.alwaysShowTag && !result) return;
+	if (!Storage.get('alwaysShowTag') && !result) return;
 
 	const tagElem = document.createElement('a');
 	tagElem.href = result?.[0][1]
@@ -146,57 +145,64 @@ const insertTag = async (
 };
 
 const Toast = () => {
-	const userData = useMutation(() => sendWorkerMessage('getUserData'));
-	const tagMappings = useMutation(() => sendWorkerMessage('getTagMappings'));
+	const steamName = useStorage<string>('steamName');
+
+	const steamLogIn = useApi({
+		action: 'steamLogIn',
+		args: [steamName.value],
+		disabled: steamName.loading
+	});
+
+	const userData = useApi({
+		action: 'getUserData',
+		args: [steamLogIn.data?.steamId],
+		disabled: steamName.loading || steamLogIn.loading
+	});
+
+	const tagMappings = useApi({ action: 'getTagMappings', args: [] });
 
 	const [fade, setFade] = useState(false);
 
 	useEffect(() => {
+		if (!userData.data || !tagMappings.data) return;
 		let observer: MutationObserver | null = null;
-		(async () => {
-			try {
-				// Load user data
-				const mappings = await tagMappings.mutateAsync();
-				const cache = await userData.mutateAsync();
+		try {
+			// Insert tags to existing DOM
+			getItemElements(document).forEach(e =>
+				insertTag(e, userData.data!, tagMappings.data!)
+			);
 
-				if (cache.status !== 'ok') throw new Error('No data');
+			// Listen for DOM changes
+			observer = new MutationObserver(mutations => {
+				mutations
+					.filter(m => m.type === 'childList')
+					.flatMap(m => [...m.addedNodes].flatMap(getItemElements))
+					.forEach(n => insertTag(n, userData.data!, tagMappings.data!));
+			});
 
-				// Insert tags to existing DOM
-				getItemElements(document).forEach(e => insertTag(e, cache, mappings));
-
-				// Listen for DOM changes
-				observer = new MutationObserver(mutations => {
-					mutations
-						.filter(m => m.type === 'childList')
-						.flatMap(m => [...m.addedNodes].flatMap(getItemElements))
-						.forEach(n => insertTag(n, cache, mappings));
-				});
-
-				const bodyElem = document.querySelector('body');
-				if (!bodyElem) throw new Error('Body not found');
-				observer.observe(bodyElem, { subtree: true, childList: true });
-			} catch (e) {
-				console.error(e);
-			} finally {
-				setTimeout(() => setFade(true), 2000);
-			}
-		})();
+			const bodyElem = document.querySelector('body');
+			if (!bodyElem) throw new Error('Body not found');
+			observer.observe(bodyElem, { subtree: true, childList: true });
+		} catch (e) {
+			console.error(e);
+		} finally {
+			setTimeout(() => setFade(true), 2000);
+		}
 		return () => {
 			observer?.disconnect();
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, []);
+	}, [userData.data, tagMappings.data]);
 
 	return (
 		<div
 			className={cls('hss-toast hss-background', {
-				'hss-shake': !!userData.error || userData.data?.status === 'noData',
+				'hss-shake': !!userData.error || !userData.data,
 				'hss-highlight': !fade
 			})}
 		>
 			<h3 className="text-lg text-white">Steam tags extension</h3>
 			<div className="text-primary flex items-center gap-1">
-				{userData.isLoading ? (
+				{userData.loading ? (
 					<>
 						<Spinner size={16} />
 						<span>Loading tags...</span>
@@ -210,7 +216,7 @@ const Toast = () => {
 								: 'Unexpected error ocurred'}
 						</span>
 					</>
-				) : userData.data?.status === 'noData' ? (
+				) : !userData.data ? (
 					<>
 						<UserX size={16} />
 						<span>
@@ -224,7 +230,7 @@ const Toast = () => {
 					</>
 				)}
 			</div>
-			{userData.data?.status === 'ok' && (
+			{userData.data && (
 				<DialogButton clickAway dialog={close => <Suggestion close={close} />}>
 					{open => (
 						<button

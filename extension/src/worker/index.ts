@@ -2,41 +2,10 @@ import { uniqBy } from 'es-toolkit';
 import browser from 'webextension-polyfill';
 import { z } from 'zod';
 
-import { getCache, setCache } from './helpers';
-import { CachedData, type Item, SuggestionSchema } from './schemas';
+import { safeFetch, Storage } from './helpers';
+import { type Item, SuggestionSchema, UserData } from './schemas';
 
 import { apiUrl } from '@/permissions';
-
-const fetchUserLibrary = (steamName: string): Promise<Item[]> =>
-	fetch(`${apiUrl}/${steamName}/library`).then(r => r.json());
-
-const getWishlistPages = async (steamId: string, page = 0): Promise<Item[]> => {
-	const response = await fetch(
-		`https://store.steampowered.com/wishlist/profiles/${steamId}/wishlistdata/?p=${page}`
-	);
-	if (!response.ok) return [];
-	const parsed = await response.json();
-
-	if (parsed.length === 0 || parsed.success === 2) return [];
-
-	const next = await getWishlistPages(steamId, page + 1);
-	return [
-		...(Object.entries(parsed) as [string, { name: string }][]).map(
-			([id, v]) => [v.name, Number(id)] as Item
-		),
-		...next
-	];
-};
-
-const UserData = z.object({
-	rgOwnedApps: z.array(z.number()),
-	rgWishlist: z.array(z.number()),
-	rgIgnoredApps: z.preprocess(
-		v => (v && typeof v === 'object' ? Object.keys(v).map(Number) : []),
-		z.array(z.number())
-	),
-	rgRecommendedApps: z.array(z.number())
-});
 
 const mapApps = (items: number[], apps: Record<number, string>) =>
 	items
@@ -44,156 +13,129 @@ const mapApps = (items: number[], apps: Record<number, string>) =>
 		.filter(g => g !== undefined);
 
 const fetchStoreData = async () => {
-	const userData = await fetch(
+	const userData = await safeFetch(
 		`https://store.steampowered.com/dynamicstore/userdata/?cacheRefresh=${Math.random()}`
-	)
-		.then(r => r.json())
-		.then(UserData.safeParse);
+	).then(UserData.parse);
 
-	if (!userData.success || !userData.data.rgOwnedApps.length)
-		return { status: 'noData' } as const;
-
-	const data = [
-		...new Set([
-			...userData.data.rgWishlist,
-			...userData.data.rgOwnedApps,
-			...userData.data.rgIgnoredApps,
-			...userData.data.rgRecommendedApps
-		]).values()
-	];
-
-	const apps = await fetch(`${apiUrl}/apps`, {
+	const apps = await safeFetch<Record<number, string>>('/apps', {
 		method: 'POST',
-		body: JSON.stringify(data)
-	}).then(r => r.json());
-
-	const parsed = CachedData.safeParse({
-		status: 'ok',
-		wishlist: mapApps(userData.data.rgWishlist, apps),
-		library: mapApps(userData.data.rgOwnedApps, apps),
-		ignored: mapApps(userData.data.rgIgnoredApps, apps),
-		recommended: mapApps(userData.data.rgRecommendedApps, apps),
-		cacheTime: new Date().toLocaleString(),
-		store: true
+		body: JSON.stringify([
+			...new Set([
+				...userData.rgWishlist,
+				...userData.rgOwnedApps,
+				...userData.rgIgnoredApps,
+				...userData.rgRecommendedApps
+			]).values()
+		])
 	});
 
-	if (!parsed.success) return { status: 'noData' } as const;
-	return parsed.data;
+	return {
+		wishlist: mapApps(userData.rgWishlist, apps),
+		library: mapApps(userData.rgOwnedApps, apps),
+		ignored: mapApps(userData.rgIgnoredApps, apps),
+		recommended: mapApps(userData.rgRecommendedApps, apps)
+	};
 };
 
-const Api = {
-	steamLogIn: async (rawName: string) => {
-		const steamName =
-			rawName.match(
-				/^(?:https?:\/\/)?steamcommunity\.com\/(?:id|profiles)\/(\w+)\/?$/
-			)?.[1] ?? rawName;
-
-		if (!steamName) throw new Error('Invalid Steam Id');
-
-		try {
-			const { steamId, avatar } = await fetch(
-				`${apiUrl}/${steamName}/profile`
-			).then(r => r.json());
-
-			const data = {
-				steamId,
-				steamName,
-				avatar
-			} satisfies Partial<CachedData>;
-			await setCache(data);
-			return data;
-		} catch (e) {
-			console.error(e);
-			throw new Error('Steam account not found');
-		}
-	},
-
-	getUserData: async (): Promise<CachedData> => {
-		const cache = await getCache();
-
-		// Check 1 hour cache time
-		// Skip cache if store data is not loaded
-		if (
-			cache.store &&
-			cache.cacheTime &&
-			new Date().getTime() - new Date(cache.cacheTime).getTime() <
-				1000 * 60 * 60
-		)
-			return cache;
-
-		let mergedData = cache;
-		try {
-			console.log('[HSS] Fetching store data');
-			const storeData = await fetchStoreData();
-
-			if (storeData.status === 'ok') {
-				mergedData = { ...mergedData, ...storeData };
+export const Api = {
+	steamLogIn: {
+		query: async (rawName?: string) => {
+			if (!rawName) {
+				await Storage.set('steamName', undefined);
+				return null;
 			}
 
-			if (cache.steamId) {
-				console.log('[HSS] Fetching owned games');
-				const library = await fetchUserLibrary(cache.steamId);
-				const wishlist = await getWishlistPages(cache.steamId);
+			const steamName =
+				rawName.match(
+					/^(?:https?:\/\/)?steamcommunity\.com\/(?:id|profiles)\/(\w+)\/?$/
+				)?.[1] ?? rawName;
 
-				mergedData = {
-					...mergedData,
-					library: uniqBy([...mergedData.library, ...library], v => v[1]),
-					wishlist: uniqBy([...mergedData.wishlist, ...wishlist], v => v[1]),
-					cacheTime: new Date().toLocaleString()
-				};
+			if (!steamName) throw new Error('Invalid Steam Id');
+
+			try {
+				const { steamId, avatar } = await safeFetch<{
+					steamId: string;
+					avatar: string;
+				}>(`/${steamName}/profile`);
+
+				await Storage.set('steamName', steamName);
+				return { steamId, steamName, avatar };
+			} catch (e) {
+				console.error(e);
+				throw new Error('Steam account not found');
 			}
-
-			if (storeData.status !== 'ok' && !cache.steamId)
-				return CachedData.parse({ status: 'noData' });
-
-			await setCache(mergedData);
-			return mergedData;
-		} catch (e) {
-			console.error(e);
-			throw new Error('Unexpected error ocurred.');
-		}
+		},
+		ttl: 60 * 60
 	},
 
-	suggestTag: async (suggestion: SuggestionSchema) => {
-		const response = await fetch(`${apiUrl}/mappings/suggest`, {
-			method: 'POST',
-			body: JSON.stringify(suggestion)
-		});
-		const parsed = (await response.json()) as
-			| { status: 'created' | 'badRequest' }
-			| { status: 'error'; message: string };
-		return parsed;
+	getUserData: {
+		query: async (steamId?: string) => {
+			const [storeData, library = []] = await Promise.all([
+				fetchStoreData(),
+				steamId ? safeFetch<Item[]>(`/${steamId}/library`) : undefined
+			]);
+
+			return {
+				...storeData,
+				library: uniqBy([...storeData.library, ...library], v => v[1])
+			};
+		},
+		ttl: 60 * 60
 	},
 
-	getTagMappings: async () => {
-		try {
-			const response = await fetch(`${apiUrl}/mappings/list`);
-			if (!response.ok) return [];
-			const json = await response.json();
-			const parsed = z.array(SuggestionSchema).parse(JSON.parse(json));
-			console.log('[HSS] Mappings:', parsed);
-			return parsed;
-		} catch (e) {
-			console.error(e);
-			return [];
-		}
+	suggestTag: {
+		query: async (suggestion: SuggestionSchema) =>
+			await safeFetch<
+				| { status: 'created' | 'badRequest' }
+				| { status: 'error'; message: string }
+			>('/mappings/suggest', {
+				method: 'POST',
+				body: JSON.stringify(suggestion)
+			}),
+		ttl: undefined
+	},
+
+	getTagMappings: {
+		query: async () =>
+			await safeFetch(`${apiUrl}/mappings/list`)
+				.then(z.array(SuggestionSchema).parse)
+				.catch(() => []),
+		ttl: 24 * 60 * 60
 	}
 } as const;
 
 export type ApiMethods = keyof typeof Api;
-export type ApiMethodsData<T extends ApiMethods> = Parameters<(typeof Api)[T]>;
-export type ApiMethodsReturn<T extends ApiMethods> = ReturnType<
-	(typeof Api)[T]
+export type ApiMethodsArgs<T extends ApiMethods> = Parameters<
+	(typeof Api)[T]['query']
 >;
+export type ApiMethodsReturn<T extends ApiMethods> = ReturnType<
+	(typeof Api)[T]['query']
+>;
+
+const pendingFetches = new Map<string, Promise<unknown>>();
 
 browser.runtime.onMessage.addListener(
 	async <T extends ApiMethods>(message: {
 		action: T;
-		data: ApiMethodsData<T>;
+		data: ApiMethodsArgs<T>;
 	}) => {
-		console.log('[HSS] Received message:', message);
-		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-		// @ts-expect-error
-		return Api[message.action](...message.data);
+		const key = `${message.action}${JSON.stringify(message.data)}`;
+
+		const pending = pendingFetches.get(key);
+		if (pending) {
+			console.log(`[Worker] Deduped ${key}`);
+			return pending;
+		}
+
+		console.log(`[Worker] Calling ${key}`);
+		const promise = new Promise((resolve, reject) => {
+			(Api[message.action] as any)
+				.query(...message.data)
+				.then(resolve)
+				.catch(reject)
+				.finally(() => pendingFetches.delete(key));
+		});
+		pendingFetches.set(key, promise);
+		return await promise;
 	}
 );

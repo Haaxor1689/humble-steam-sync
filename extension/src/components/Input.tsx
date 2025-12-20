@@ -5,7 +5,7 @@ const Input = (props: InputHTMLAttributes<HTMLInputElement>) => (
 	<input
 		{...props}
 		className={classNames(
-			'self-stretch border-b border-[var(--btn-outline)] bg-transparent p-2 text-white',
+			'self-stretch border-b border-(--btn-outline) bg-transparent p-2 text-white',
 			props.className
 		)}
 	/>
