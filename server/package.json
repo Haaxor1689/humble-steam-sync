@@ -4,7 +4,7 @@
 	"scripts": {
 		"dev": "bun --watch ./index.ts",
 		"start": "node ./dist/index.js",
-		"build": "tsc ./index.ts --outDir ./dist"
+		"build": "tsc --skipLibCheck --outDir ./dist"
 	},
 	"dependencies": {
 		"express": "^5.2.1",
