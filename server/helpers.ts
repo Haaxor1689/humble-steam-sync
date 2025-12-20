@@ -1,4 +1,4 @@
-import { type BunRequest } from 'bun';
+import type { NextFunction, Request, Response } from 'express';
 import z from 'zod';
 
 export const getSteamId = async (steamId: string) => {
@@ -23,17 +23,23 @@ export type GetAppListResponse = {
 };
 
 export const route =
-	<T extends string>(callback: (req: BunRequest<T>) => unknown) =>
-	async (req: BunRequest<T>) => {
+	<T extends Request>(callback: (req: T) => Promise<unknown>) =>
+	async (req: T, res: Response, _next: NextFunction) => {
 		try {
 			console.log(`${req.method} ${req.url}`);
-			const res = await callback(req);
-			if (res instanceof Response) return res;
-			return new Response(JSON.stringify(res));
+
+			const result = await callback(req);
+
+			if (result instanceof Response) {
+				// Express can't send Web Response, so unwrap manually
+				const body = await result.text();
+				res.status(result.status).send(body);
+				return;
+			}
+
+			res.json(result);
 		} catch (error) {
 			console.error(`[ERROR] ${req.method} ${req.url}`, error);
-			return new Response(JSON.stringify({ error: String(error) }), {
-				status: 500
-			});
+			res.status(500).json({ error: String(error) });
 		}
 	};
