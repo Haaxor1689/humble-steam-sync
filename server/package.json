@@ -1,6 +1,7 @@
 {
 	"name": "@humble-steam-sync/server",
 	"private": true,
+	"type": "module",
 	"scripts": {
 		"dev": "bun --watch ./index.ts",
 		"start": "node ./dist/index.js",
