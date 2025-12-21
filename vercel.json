@@ -3,16 +3,15 @@
 	"bunVersion": "1.x",
 	"buildCommand": "bun build:api",
 	"installCommand": "bun install",
-	"builds": [
-		{
-			"src": "server/dist/index.js",
-			"use": "@vercel/node"
+	"functions": {
+		"server/dist/index.js": {
+			"runtime": "@vercel/node@latest"
 		}
-	],
-	"routes": [
+	},
+	"rewrites": [
 		{
-			"src": "/(.*)",
-			"dest": "server/dist/index.js"
+			"source": "/(.*)",
+			"destination": "server/dist/index.js"
 		}
 	]
 }
