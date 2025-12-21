@@ -4,16 +4,5 @@
 	"buildCommand": "bun build:api",
 	"installCommand": "bun install",
 	"framework": "express",
-	"builds": [
-		{
-			"src": "dist/index.js",
-			"use": "@vercel/node"
-		}
-	],
-	"routes": [
-		{
-			"src": "/(.*)",
-			"dest": "dist/index.js"
-		}
-	]
+	"outputDirectory": "server/dist"
 }
