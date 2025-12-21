@@ -1,14 +1,14 @@
 import express from 'express';
 import z from 'zod';
 
-import { db } from './db';
-import { apps, suggestions } from './db/schema';
+import { db } from './db/index.js';
+import { apps, suggestions } from './db/schema.js';
 import {
 	type GetAppListResponse,
 	getSteamId,
 	route,
 	SuggestionSchema
-} from './helpers';
+} from './helpers.js';
 
 const app = express();
 app.use(express.json({ type: () => true }));

@@ -1,7 +1,7 @@
 import { createClient } from '@libsql/client';
 import { drizzle } from 'drizzle-orm/libsql';
 
-import * as schema from './schema';
+import * as schema from './schema.js';
 
 if (!process.env.DATABASE_URL || !process.env.DATABASE_AUTH_TOKEN) {
 	throw new Error('Missing env vars DATABASE_URL or DATABASE_AUTH_TOKEN');
