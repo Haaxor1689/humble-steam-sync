@@ -109,6 +109,10 @@ app.post(
 	})
 );
 
-app.listen(3005, () => {
-	console.log('Server running at http://localhost:3005');
-});
+if (process.env.NODE_ENV !== 'production') {
+	app.listen(3005, () => {
+		console.log('Server running at http://localhost:3005');
+	});
+}
+
+export default app;

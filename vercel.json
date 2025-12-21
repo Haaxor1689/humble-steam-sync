@@ -3,7 +3,17 @@
 	"bunVersion": "1.x",
 	"buildCommand": "bun build:api",
 	"installCommand": "bun install",
-	"functions": {
-		"api/*": {}
-	}
+	"framework": "express",
+	"builds": [
+		{
+			"src": "dist/index.js",
+			"use": "@vercel/node"
+		}
+	],
+	"routes": [
+		{
+			"src": "/(.*)",
+			"dest": "dist/index.js"
+		}
+	]
 }
