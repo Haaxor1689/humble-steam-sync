@@ -1,5 +1,5 @@
-import { json } from 'body-parser';
 import express from 'express';
+import z from 'zod';
 
 import { db } from './db';
 import { apps, suggestions } from './db/schema';
@@ -11,7 +11,7 @@ import {
 } from './helpers';
 
 const app = express();
-app.use(json());
+app.use(express.json({ type: () => true }));
 
 app.get(
 	'/api/:steamId/library',
@@ -74,7 +74,7 @@ app.post(
 app.post(
 	'/api/apps',
 	route(async req => {
-		const data = req.body as number[];
+		const data = z.array(z.number()).parse(req.body);
 
 		const cached = await db.query.apps.findMany({
 			where: (app, { inArray }) => inArray(app.app_id, data)

@@ -28,7 +28,7 @@ const Popup = () => {
 		disabled: steamName.loading || steamLogIn.loading
 	});
 
-	const isStoreLoggedIn = userData.data?.recommended !== undefined;
+	const isStoreLoggedIn = !!userData.data?.recommended.length;
 	const isUsernameLoggedIn = steamLogIn.data?.steamId !== undefined;
 
 	const loading = steamLogIn.loading || userData.loading;

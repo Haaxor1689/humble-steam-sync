@@ -4,6 +4,7 @@
 	"scripts": {
 		"dev:api": "cd server && bun run dev",
 		"build:api": "cd server && bun run build",
+		"start:api": "cd server && bun run start",
 		"dev:ext": "cd extension && bun run dev",
 		"build:ext": "cd extension && bun run build"
 	},
