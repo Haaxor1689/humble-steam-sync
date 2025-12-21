@@ -11,11 +11,12 @@
 		"express": "^5.2.1",
 		"@libsql/client": "0.15.15",
 		"drizzle-orm": "0.45.1",
-		"zod": "3.25.76"
+		"zod": "catalog:"
 	},
 	"devDependencies": {
 		"@types/express": "^5.0.6",
 		"drizzle-kit": "0.31.8",
+		"eslint": "catalog:",
 		"typescript": "catalog:"
 	}
 }
