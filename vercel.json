@@ -3,11 +3,6 @@
 	"bunVersion": "1.x",
 	"buildCommand": "bun build:api",
 	"installCommand": "bun install",
-	"functions": {
-		"server/dist/index.js": {
-			"runtime": "@vercel/node@latest"
-		}
-	},
 	"rewrites": [
 		{
 			"source": "/(.*)",
