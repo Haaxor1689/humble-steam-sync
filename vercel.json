@@ -4,8 +4,6 @@
 	"buildCommand": "bun build:api",
 	"installCommand": "bun install",
 	"functions": {
-		"api/*": {
-			"runtime": "bun"
-		}
+		"api/*": {}
 	}
 }
