@@ -35,7 +35,7 @@ try {
 	await createArchive('source.firefox.zip');
 
 	// Generate description for extension store pages
-	const readme = await fs.readFile('README.md', { encoding: 'utf-8' });
+	const readme = await fs.readFile('../README.md', { encoding: 'utf-8' });
 	const description = readme.match(/## Description\n\n([^#]+)/)[1];
 	const changelog = readme
 		.match(/## (Changelog[^#]+)/)[1]

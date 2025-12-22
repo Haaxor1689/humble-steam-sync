@@ -1,3 +1,7 @@
+declare const process: {
+	env: { NODE_ENV: 'development' | 'production' | 'test' | undefined };
+};
+
 export const apiUrl =
 	(import.meta.env?.NODE_ENV ?? process.env.NODE_ENV) === 'production'
 		? 'https://humble-steam-sync.haaxor1689.dev/api'

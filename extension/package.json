@@ -9,7 +9,7 @@
 	"scripts": {
 		"dev": "vite",
 		"preview": "vite preview",
-		"build": "vite build && node post-build.js"
+		"build": "tsc -b && vite build && node post-build.js"
 	},
 	"dependencies": {
 		"classnames": "2.5.1",
@@ -31,7 +31,6 @@
 		"fs-extra": "^11.1.1",
 		"@types/fs-extra": "^11.0.4",
 		"vite": "^7.0.5",
-		"vite-plugin-zip-pack": "^1.2.4",
 		"webextension-polyfill": "^0.10.0",
 		"eslint": "catalog:",
 		"tailwindcss": "4.1.17",

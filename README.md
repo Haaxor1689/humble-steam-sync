@@ -18,6 +18,11 @@ There are 2 ways of using this extension:
 
 ## Changelog
 
+**v4.0:**
+
+- Replacement of removed steam APIs
+- Major refactor of the codebase
+
 **v3.1:**
 
 - Updated dependencies to fix new Chrome extension policy issue
