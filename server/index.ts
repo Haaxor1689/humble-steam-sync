@@ -1,4 +1,5 @@
 import express from 'express';
+import path from 'path';
 import z from 'zod';
 
 import { db } from './db/index.js';
@@ -12,6 +13,13 @@ import {
 
 const app = express();
 app.use(express.json({ type: () => true }));
+
+const __dirname = new URL('.', import.meta.url).pathname.slice(1);
+app.use(express.static(path.join(__dirname, '..', 'extension', 'public')));
+
+app.get('/favicon.ico', (_, res) => {
+	res.redirect(301, '/logo.png');
+});
 
 app.get(
 	'/api/:steamId/library',
