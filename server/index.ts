@@ -15,7 +15,7 @@ const app = express();
 app.use(express.json({ type: () => true }));
 
 const __dirname = new URL('.', import.meta.url).pathname.slice(1);
-app.use(express.static(path.join(__dirname, '..', 'extension', 'public')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/favicon.ico', (_, res) => {
 	res.redirect(301, '/logo.png');
