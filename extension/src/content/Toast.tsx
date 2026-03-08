@@ -1,15 +1,11 @@
 import { useEffect, useState } from 'react';
 import cls from 'classnames';
-import { FileWarning, UserCheck, UserX, XOctagon } from 'lucide-react';
+import { UserCheck, UserX, XOctagon } from 'lucide-react';
 
-import Suggestion from './Suggestion';
-
-import DialogButton from '@/components/DialogButton';
 import Spinner from '@/components/Spinner';
 import useApi from '@/utils/useApi';
 import useStorage from '@/utils/useStorage';
 import { type ApiMethodsReturn } from '@/worker';
-import { Storage } from '@/worker/helpers';
 import { type Item } from '@/worker/schemas';
 
 const getRawName = (item: HTMLElement) =>
@@ -28,11 +24,16 @@ const getRawName = (item: HTMLElement) =>
 	item.querySelector('h1.human_name-view' as 'div')?.innerText ??
 	'';
 
-const getCleanedUpName = (item: string) =>
-	item.replace(/ \d+% Off Coupon/i, '').replace(/ \(Steam\)/i, '');
-
 const getItemName = (item: string) =>
-	getCleanedUpName(item).replace(/\W/g, '').replace(/_/g, '').toLowerCase();
+	item
+		.replace(/ \d+% Off Coupon/i, '')
+		.replace(/ \(Steam\)/i, '')
+		.replace(/\W/g, ' ')
+		.replace(/ +/g, ' ')
+		.toLowerCase();
+
+const getEscapedName = (item: string) =>
+	encodeURIComponent(item).replace(/%20/g, '+');
 
 const getItemElements = (node?: Node) => {
 	if (!(node instanceof HTMLElement) && !(node instanceof Document)) return [];
@@ -67,23 +68,22 @@ const getItemElements = (node?: Node) => {
 const insertTag = async (
 	item: HTMLElement,
 	cache: Awaited<ApiMethodsReturn<'getUserData'>>,
-	mappings: Awaited<ApiMethodsReturn<'getTagMappings'>>
+	alwaysShowTag?: boolean
 ) => {
 	// Free up the main thread
 	await new Promise(r => setTimeout(r, 0));
 
 	const rawName = getRawName(item);
-	const game =
-		mappings
-			?.find(i => i.humble_name === rawName)
-			?.steam_name?.replace(/\W/g, '')
-			.toLowerCase() ?? getItemName(rawName);
+	const gameName = getItemName(rawName);
 
-	console.log(
-		'[HSS] Adding tag:',
-		game,
-		cache.wishlist.find(i => i[0].startsWith('Rain'))
-	);
+	console.log('[HSS] Adding tag:', rawName, gameName);
+	gameName.startsWith('smalland') &&
+		console.log({
+			rawName,
+			gameName,
+			item,
+			ignore: cache.ignored.find(i => getItemName(i[0]).startsWith('smalland'))
+		});
 
 	const result = (
 		[
@@ -93,19 +93,17 @@ const insertTag = async (
 		] as const
 	).reduce<[Item, string] | undefined>((r, [arr, message]) => {
 		if (r) return r;
-		const item = arr.find(i => game === i[0].replace(/\W/g, '').toLowerCase());
+		const item = arr.find(i => gameName === getItemName(i[0]));
 		if (!item) return undefined;
 		return [item, message];
 	}, undefined);
 
-	if (!Storage.get('alwaysShowTag') && !result) return;
+	if (!alwaysShowTag && !result) return;
 
 	const tagElem = document.createElement('a');
-	tagElem.href = result?.[0][1]
-		? `https://store.steampowered.com/app/${result?.[0][1]}`
-		: `https://store.steampowered.com/search/?term=${
-				result?.[0][0] ?? getCleanedUpName(rawName)
-			}`;
+	tagElem.href = result
+		? `https://store.steampowered.com/app/${result[0][1]}`
+		: `https://store.steampowered.com/search/?term=${getEscapedName(gameName)}`;
 	tagElem.target = `_blank`;
 	tagElem.innerText = result?.[1] ?? '.';
 	tagElem.className = 'hss-tag';
@@ -117,7 +115,7 @@ const insertTag = async (
 	if (item.localName === 'tr') {
 		const newTarget = item.querySelector('.platform' as 'div');
 		if (!newTarget) {
-			console.error("Couldn't find elem to connect to");
+			console.error("[HSS] Couldn't find elem to connect to");
 			return;
 		}
 		target = newTarget;
@@ -129,7 +127,7 @@ const insertTag = async (
 			'.pricing-info-view' as 'div'
 		);
 		if (!newTarget) {
-			console.error("Couldn't find elem to connect to");
+			console.error("[HSS] Couldn't find elem to connect to");
 			return;
 		}
 		target = newTarget;
@@ -146,6 +144,7 @@ const insertTag = async (
 
 const Toast = () => {
 	const steamName = useStorage<string>('steamName');
+	const alwaysShowTag = useStorage<boolean>('alwaysShowTag');
 
 	const steamLogIn = useApi({
 		action: 'steamLogIn',
@@ -159,17 +158,15 @@ const Toast = () => {
 		disabled: steamName.loading || steamLogIn.loading
 	});
 
-	const tagMappings = useApi({ action: 'getTagMappings', args: [] });
-
 	const [fade, setFade] = useState(false);
 
 	useEffect(() => {
-		if (!userData.data || !tagMappings.data) return;
+		if (!userData.data) return;
 		let observer: MutationObserver | null = null;
 		try {
 			// Insert tags to existing DOM
 			getItemElements(document).forEach(e =>
-				insertTag(e, userData.data!, tagMappings.data!)
+				insertTag(e, userData.data!, alwaysShowTag.value)
 			);
 
 			// Listen for DOM changes
@@ -177,21 +174,21 @@ const Toast = () => {
 				mutations
 					.filter(m => m.type === 'childList')
 					.flatMap(m => [...m.addedNodes].flatMap(getItemElements))
-					.forEach(n => insertTag(n, userData.data!, tagMappings.data!));
+					.forEach(n => insertTag(n, userData.data!, alwaysShowTag.value));
 			});
 
 			const bodyElem = document.querySelector('body');
 			if (!bodyElem) throw new Error('Body not found');
 			observer.observe(bodyElem, { subtree: true, childList: true });
 		} catch (e) {
-			console.error(e);
+			console.error('[HSS]', e);
 		} finally {
 			setTimeout(() => setFade(true), 2000);
 		}
 		return () => {
 			observer?.disconnect();
 		};
-	}, [userData.data, tagMappings.data]);
+	}, [userData.data, alwaysShowTag.value]);
 
 	return (
 		<div
@@ -230,20 +227,6 @@ const Toast = () => {
 					</>
 				)}
 			</div>
-			{userData.data && (
-				<DialogButton clickAway dialog={close => <Suggestion close={close} />}>
-					{open => (
-						<button
-							type="button"
-							onClick={open}
-							className="flex items-center gap-1 text-white/60"
-						>
-							<FileWarning size={16} />
-							<span>Report missing tag</span>
-						</button>
-					)}
-				</DialogButton>
-			)}
 		</div>
 	);
 };

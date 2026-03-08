@@ -1,8 +1,4 @@
-import { Bug, Github, History, Trash2 } from 'lucide-react';
-
-import pkg from '../../package.json';
-
-import { Storage } from '@/worker/helpers';
+import { Bug } from 'lucide-react';
 
 const About = () => (
 	<details>
@@ -10,39 +6,42 @@ const About = () => (
 			<h2 className="inline">About</h2>
 		</summary>
 
-		<div className="flex flex-col items-start gap-1">
-			<p className="flex items-center gap-1 text-sm text-white/50">
-				<History size={16} />
-				<span>v{pkg.version}</span>
+		<div className="flex flex-col items-start gap-1 text-sm">
+			<p className="flex items-center gap-1 text-white/70">
+				<span>Created by</span>
+				<a
+					href="https://haaxor1689.dev"
+					target="_blank"
+					rel="noreferrer"
+					className="hover:underline"
+				>
+					Haaxor1689
+				</a>
 			</p>
 
 			<a
-				href="https://github.com/Haaxor1689/humble-steam-sync"
+				href="https://ko-fi.com/haaxor1689"
 				target="_blank"
-				className="flex items-center gap-1 text-sm"
 				rel="noreferrer"
+				className="flex items-center gap-1 hover:underline"
 			>
-				<Github size={16} />
-				<span>Homepage</span>
+				<img
+					src="https://storage.ko-fi.com/cdn/logomarkLogo.png"
+					alt="Ko-fi logo"
+					className="w-4"
+				/>
+				<span>Support me</span>
 			</a>
 
 			<a
-				href="https://github.com/Haaxor1689/humble-steam-sync/issues/new"
+				href="https://discord.gg/pDeTHQH99B"
 				target="_blank"
-				className="text-primary flex items-center gap-1 text-sm"
 				rel="noreferrer"
+				className="text-primary flex items-center gap-1 hover:underline"
 			>
 				<Bug size={16} />
-				<span>Report issues</span>
+				<span>Report a bug</span>
 			</a>
-
-			<button
-				className="text-error flex items-center gap-1 text-sm"
-				onClick={() => Storage.clear().then(() => window.location.reload())}
-			>
-				<Trash2 size={16} />
-				<span>Reset ALL data</span>
-			</button>
 		</div>
 	</details>
 );

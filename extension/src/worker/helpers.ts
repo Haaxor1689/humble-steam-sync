@@ -17,11 +17,11 @@ export const callApi = async <T extends ApiMethods>(
 
 	const cached = await Storage.get<Awaited<ApiMethodsReturn<T>>>(key);
 	if (cached !== undefined) {
-		console.log(`[API] Using cached ${action} with`, data);
+		console.log(`[HSS][API] Using cached ${action} with`, data);
 		return cached;
 	}
 
-	console.log(`[API] Calling ${action} with`, data);
+	console.log(`[HSS][API] Calling ${action} with`, data);
 	browser.storage.local.get().then(r => console.log(r));
 	const result = await browser.runtime.sendMessage({ action, data });
 
@@ -40,15 +40,15 @@ export const Storage = {
 	get: async <T>(key: string) => {
 		const entry = await browser.storage.local.get(key).then(r => r[key]);
 		if (!entry) {
-			console.log(`[Storage] Missing ${key}`);
+			console.log(`[HSS][Storage] Missing ${key}`);
 			return undefined;
 		}
 		if (entry.expiresAt !== 0 && entry.expiresAt < Date.now()) {
-			console.log(`[Storage] Expired ${key}`);
+			console.log(`[HSS][Storage] Expired ${key}`);
 			await browser.storage.local.remove(key);
 			return undefined;
 		}
-		console.log(`[Storage] Hit ${key}`, entry);
+		console.log(`[HSS][Storage] Hit ${key}`, entry);
 		return entry.data as T;
 	},
 	set: async (key: string, data: unknown, ttl?: number) => {
@@ -76,7 +76,7 @@ export const safeFetch = async <T = unknown>(
 	try {
 		return JSON.parse(text) as T;
 	} catch {
-		console.error(`[Fetch] Invalid JSON response for ${url}:`, { text });
+		console.error(`[HSS][Fetch] Invalid JSON response for ${url}:`, { text });
 		throw new Error('Invalid JSON response');
 	}
 };

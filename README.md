@@ -7,6 +7,10 @@ This repository contains the full source code of the `Steam tags for Humble Bund
 - Chrome: https://chrome.google.com/webstore/detail/steam-tags-for-humble-bun/fcinjfniedmmfaalakcallcbjepfiabi
 - Firefox: https://addons.mozilla.org/en-US/firefox/addon/steam-tags-for-humble-bundle/
 
+## Support
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/haaxor1689)
+
 ## Description
 
 Display "On wishlist" and "In library" tags next to games on various Humble Bundle pages based on your Steam account wishlist and library.
@@ -17,6 +21,13 @@ There are 2 ways of using this extension:
 - Enter your SteamId or CustomUrl in the extension settings
 
 ## Changelog
+
+**v4.1:**
+
+- Fixed issue with fetching info about profiles with too many games
+- Improved tag matching and logging
+- Removed tag mapping suggestions
+- Updated Saved data and About sections
 
 **v4.0:**
 

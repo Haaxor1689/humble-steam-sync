@@ -1,11 +1,8 @@
 import { uniqBy } from 'es-toolkit';
 import browser from 'webextension-polyfill';
-import { z } from 'zod';
 
 import { safeFetch, Storage } from './helpers';
-import { type Item, SuggestionSchema, UserData } from './schemas';
-
-import { apiUrl } from '@/permissions';
+import { type Item, UserData } from './schemas';
 
 const mapApps = (items: number[], apps: Record<number, string>) =>
 	items
@@ -17,17 +14,25 @@ const fetchStoreData = async () => {
 		`https://store.steampowered.com/dynamicstore/userdata/?cacheRefresh=${Math.random()}`
 	).then(UserData.parse);
 
-	const apps = await safeFetch<Record<number, string>>('/apps', {
-		method: 'POST',
-		body: JSON.stringify([
-			...new Set([
-				...userData.rgWishlist,
-				...userData.rgOwnedApps,
-				...userData.rgIgnoredApps,
-				...userData.rgRecommendedApps
-			]).values()
-		])
-	});
+	const maxAppsPerRequest = 500;
+	const uniqueAppIds = [
+		...new Set([
+			...userData.rgWishlist,
+			...userData.rgOwnedApps,
+			...userData.rgIgnoredApps,
+			...userData.rgRecommendedApps
+		]).values()
+	];
+
+	const apps: Record<number, string> = {};
+	for (let i = 0; i < uniqueAppIds.length; i += maxAppsPerRequest) {
+		const response = await safeFetch<Record<number, string>>('/apps', {
+			method: 'POST',
+			body: JSON.stringify(uniqueAppIds.slice(i, i + maxAppsPerRequest))
+		});
+
+		Object.assign(apps, response);
+	}
 
 	return {
 		wishlist: mapApps(userData.rgWishlist, apps),
@@ -81,26 +86,6 @@ export const Api = {
 			};
 		},
 		ttl: 60 * 60
-	},
-
-	suggestTag: {
-		query: async (suggestion: SuggestionSchema) =>
-			await safeFetch<
-				| { status: 'created' | 'badRequest' }
-				| { status: 'error'; message: string }
-			>('/mappings/suggest', {
-				method: 'POST',
-				body: JSON.stringify(suggestion)
-			}),
-		ttl: undefined
-	},
-
-	getTagMappings: {
-		query: async () =>
-			await safeFetch(`${apiUrl}/mappings/list`)
-				.then(z.array(SuggestionSchema).parse)
-				.catch(() => []),
-		ttl: 24 * 60 * 60
 	}
 } as const;
 
@@ -123,19 +108,20 @@ browser.runtime.onMessage.addListener(
 
 		const pending = pendingFetches.get(key);
 		if (pending) {
-			console.log(`[Worker] Deduped ${key}`);
+			console.log(`[HSS][Worker] Deduped ${key}`);
 			return pending;
 		}
 
-		console.log(`[Worker] Calling ${key}`);
-		const promise = new Promise((resolve, reject) => {
-			(Api[message.action] as any)
-				.query(...message.data)
-				.then(resolve)
-				.catch(reject)
-				.finally(() => pendingFetches.delete(key));
-		});
-		pendingFetches.set(key, promise);
+		console.log(`[HSS][Worker] Calling ${key}`);
+		const query = Api[message.action].query as unknown as (
+			...args: ApiMethodsArgs<T>
+		) => ApiMethodsReturn<T>;
+
+		const promise = query(...message.data).finally(() =>
+			pendingFetches.delete(key)
+		);
+
+		pendingFetches.set(key, promise as Promise<unknown>);
 		return await promise;
 	}
 );

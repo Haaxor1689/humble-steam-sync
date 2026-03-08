@@ -1,9 +1,10 @@
 import cls from 'classnames';
-import { AlertCircle, Check, LogIn, RefreshCcw } from 'lucide-react';
+import { AlertCircle, Check, LogIn, RefreshCcw, Trash2 } from 'lucide-react';
 
 import About from './About';
 import Instructions from './Instructions';
 import Options from './Options';
+import Version from './Version';
 
 import Button from '@/components/Button';
 import Input from '@/components/Input';
@@ -11,6 +12,7 @@ import Spinner from '@/components/Spinner';
 import useApi from '@/utils/useApi';
 import useField from '@/utils/useField';
 import useStorage from '@/utils/useStorage';
+import { Storage } from '@/worker/helpers';
 
 const Popup = () => {
 	const steamName = useStorage<string>('steamName');
@@ -141,13 +143,27 @@ const Popup = () => {
 						<div>Recommended items:</div>
 						<div className="text-white">{userData.data.recommended.length}</div>
 					</div>
-					<Button className="mt-2" onClick={userData.revalidate}>
-						<RefreshCcw size={16} /> Refresh
-					</Button>
+
+					<div className="mt-2 flex gap-2">
+						<Button onClick={userData.revalidate}>
+							<RefreshCcw size={16} /> Refresh
+						</Button>
+
+						<Button
+							onClick={() =>
+								prompt('Type "reset" to reset all data.') === 'reset' &&
+								Storage.clear().then(() => window.location.reload())
+							}
+							className="text-error!"
+						>
+							<Trash2 size={16} /> Reset ALL data
+						</Button>
+					</div>
 				</details>
 			)}
 
 			<About />
+			<Version />
 		</>
 	);
 };
